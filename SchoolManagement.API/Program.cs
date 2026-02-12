@@ -1,3 +1,4 @@
+// SchoolManagement.API/Program.cs
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -83,14 +84,21 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// CORS Configuration
+// ⭐ CORS Configuration - Vue Frontend İçin
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("VueAppPolicy", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy.WithOrigins(
+                "http://localhost:5173",  // Vite default port
+                "http://localhost:5174",
+                "http://localhost:5175",  // Sizin Vue port'unuz
+                "http://localhost:8080",  // Vue CLI default port
+                "http://localhost:3000"   // Opsiyonel
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials(); // Önemli: Cookie ve Auth için
     });
 });
 
@@ -129,9 +137,10 @@ if (app.Environment.IsDevelopment())
 // Global Exception Handler Middleware
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
-app.UseHttpsRedirection();
+// ⭐ ÖNEMLI: CORS middleware sırası kritik!
+app.UseCors("VueAppPolicy");  // CORS en başta olmalı
 
-app.UseCors("AllowAll");
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
