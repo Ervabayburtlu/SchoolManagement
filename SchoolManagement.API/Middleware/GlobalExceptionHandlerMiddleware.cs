@@ -56,10 +56,11 @@ public class GlobalExceptionHandlerMiddleware
                 statusCode = (int)HttpStatusCode.BadRequest,
                 response = ApiResponse<object>.ErrorResponse(exception.Message)
             },
+            
             _ => new
             {
                 statusCode = (int)HttpStatusCode.InternalServerError,
-                response = ApiResponse<object>.ErrorResponse("An internal server error occurred")
+                response = ApiResponse<object>.ErrorResponse(exception.Message + " | " + exception.InnerException?.Message)
             }
         };
 

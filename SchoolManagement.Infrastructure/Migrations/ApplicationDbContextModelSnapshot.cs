@@ -58,7 +58,7 @@ namespace SchoolManagement.Infrastructure.Migrations
                     b.HasIndex("AcademicianEmail")
                         .IsUnique();
 
-                    b.ToTable("ACADEMICIAN");
+                    b.ToTable("ACADEMICIAN", (string)null);
                 });
 
             modelBuilder.Entity("SchoolManagement.Core.Entities.Advisor", b =>
@@ -87,7 +87,7 @@ namespace SchoolManagement.Infrastructure.Migrations
                     b.HasIndex("AdvisorMail")
                         .IsUnique();
 
-                    b.ToTable("ADVISOR");
+                    b.ToTable("ADVISOR", (string)null);
                 });
 
             modelBuilder.Entity("SchoolManagement.Core.Entities.Exam", b =>
@@ -118,7 +118,7 @@ namespace SchoolManagement.Infrastructure.Migrations
 
                     b.HasIndex("SubjectId");
 
-                    b.ToTable("EXAM");
+                    b.ToTable("EXAM", (string)null);
                 });
 
             modelBuilder.Entity("SchoolManagement.Core.Entities.Excuse", b =>
@@ -168,7 +168,7 @@ namespace SchoolManagement.Infrastructure.Migrations
 
                     b.HasIndex("StudentNo");
 
-                    b.ToTable("EXCUSE");
+                    b.ToTable("EXCUSE", (string)null);
                 });
 
             modelBuilder.Entity("SchoolManagement.Core.Entities.Student", b =>
@@ -212,7 +212,7 @@ namespace SchoolManagement.Infrastructure.Migrations
                     b.HasIndex("StudentMail")
                         .IsUnique();
 
-                    b.ToTable("STUDENT");
+                    b.ToTable("STUDENT", (string)null);
                 });
 
             modelBuilder.Entity("SchoolManagement.Core.Entities.StudentExam", b =>
@@ -246,7 +246,7 @@ namespace SchoolManagement.Infrastructure.Migrations
 
                     b.HasIndex("StudentNo");
 
-                    b.ToTable("STUDENT_EXAM");
+                    b.ToTable("STUDENT_EXAM", (string)null);
                 });
 
             modelBuilder.Entity("SchoolManagement.Core.Entities.StudentSubject", b =>
@@ -271,7 +271,7 @@ namespace SchoolManagement.Infrastructure.Migrations
 
                     b.HasIndex("SubjectId");
 
-                    b.ToTable("STUDENT_SUBJECT");
+                    b.ToTable("STUDENT_SUBJECT", (string)null);
                 });
 
             modelBuilder.Entity("SchoolManagement.Core.Entities.Subject", b =>
@@ -293,7 +293,7 @@ namespace SchoolManagement.Infrastructure.Migrations
 
                     b.HasIndex("AcademicianId");
 
-                    b.ToTable("SUBJECT");
+                    b.ToTable("SUBJECT", (string)null);
                 });
 
             modelBuilder.Entity("SchoolManagement.Core.Entities.Exam", b =>

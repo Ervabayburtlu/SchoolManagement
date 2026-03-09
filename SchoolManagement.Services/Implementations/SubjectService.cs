@@ -48,7 +48,10 @@ public class SubjectService : ISubjectService
         {
             SubjectId = request.SubjectId,
             SubjectName = request.SubjectName,
-            AcademicianId = request.AcademicianId
+            AcademicianId = request.AcademicianId,
+            DayIndex = request.DayIndex,
+            StartTime = request.StartTime,
+            EndTime = request.EndTime
         };
 
         var created = await _subjectRepository.AddAsync(subject);
@@ -79,7 +82,10 @@ public class SubjectService : ISubjectService
             AcademicianId = subject.AcademicianId,
             AcademicianName = subject.Academician != null 
                 ? $"{subject.Academician.FirstName} {subject.Academician.LastName}" 
-                : null
+                : null,
+            DayIndex = subject.DayIndex,
+            StartTime = subject.StartTime,
+            EndTime = subject.EndTime     
         };
     }
 }

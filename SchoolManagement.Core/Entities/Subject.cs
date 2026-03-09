@@ -15,7 +15,16 @@ public class Subject
 
     [Column("academician_id")]
     public string? AcademicianId { get; set; }
+    [Column("day_index")]
+    public int DayIndex { get; set; }
 
+    
+ 
+    [Column("start_time")]
+    public TimeSpan? StartTime { get; set; }
+
+    [Column("end_time")]
+    public TimeSpan? EndTime { get; set; }
     // Navigation Properties
     [ForeignKey("AcademicianId")]
     public virtual Academician? Academician { get; set; }

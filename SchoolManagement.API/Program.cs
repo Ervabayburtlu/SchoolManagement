@@ -13,9 +13,13 @@ using SchoolManagement.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
+
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
 
 // Swagger configuration with JWT
 builder.Services.AddSwaggerGen(c =>
@@ -89,16 +93,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("VueAppPolicy", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",  // Vite default port
-                "http://localhost:5174",
-                "http://localhost:5175",  // Sizin Vue port'unuz
-                "http://localhost:8080",  // Vue CLI default port
-                "http://localhost:3000"   // Opsiyonel
-            )
+        policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost") // Bütün localhost portlarına izin verir
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials(); // Önemli: Cookie ve Auth için
+            .AllowCredentials();
     });
 });
 
@@ -123,6 +121,14 @@ builder.Services.AddScoped<IExcuseService, ExcuseService>();
 
 var app = builder.Build();
 
+// ⭐ ÖNEMLI: CORS middleware sırası kritik!
+app.UseCors("VueAppPolicy");  // CORS en başta olmalı
+
+// Global Exception Handler Middleware
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
+
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -134,13 +140,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Global Exception Handler Middleware
-app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
-// ⭐ ÖNEMLI: CORS middleware sırası kritik!
-app.UseCors("VueAppPolicy");  // CORS en başta olmalı
-
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
