@@ -14,6 +14,7 @@ public class StudentRepository : GenericRepository<Student>, IStudentRepository
     public async Task<Student?> GetByEmailAsync(string email)
     {
         return await _dbSet
+            .Include(s => s.Advisor) 
             .FirstOrDefaultAsync(s => s.StudentMail == email);
     }
 

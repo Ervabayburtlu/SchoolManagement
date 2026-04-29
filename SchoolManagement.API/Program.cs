@@ -118,6 +118,7 @@ builder.Services.AddScoped<IAcademicianService, AcademicianService>();
 builder.Services.AddScoped<ISubjectService, SubjectService>();
 builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IExcuseService, ExcuseService>();
+builder.Services.AddScoped<IConsistencyService, ConsistencyService>();
 
 var app = builder.Build();
 

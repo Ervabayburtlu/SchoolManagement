@@ -32,6 +32,18 @@ public class Student
     [ForeignKey("AdvisorId")]
     public virtual Advisor? Advisor { get; set; }
 
+    [Column("active_bar_count")]
+    public int ActiveBarCount { get; set; } = 0;
+
+    [Column("is_locked")]               
+    public bool IsLocked { get; set; } = false;
+
+    [Column("locked_at")]
+    public DateTime? LockedAt { get; set; }
+
+    [Column("unlocked_at")]
+    public DateTime? UnlockedAt { get; set; }
+
     public virtual ICollection<StudentExam> StudentExams { get; set; } = new List<StudentExam>();
     public virtual ICollection<StudentSubject> StudentSubjects { get; set; } = new List<StudentSubject>();
     public virtual ICollection<Excuse> Excuses { get; set; } = new List<Excuse>();

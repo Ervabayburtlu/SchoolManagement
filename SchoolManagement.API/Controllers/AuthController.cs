@@ -20,22 +20,37 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
-        // Validation
-        var validationResult = AuthValidator.ValidateLogin(request);
-        if (!validationResult.IsValid)
-        {
-            return BadRequest(ApiResponse<object>.ErrorResponse(
-                "Validation failed", 
-                validationResult.Errors));
-        }
+        try {
+            // Validation
+            var validationResult = AuthValidator.ValidateLogin(request);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse(
+                    "Validation failed",
+                    validationResult.Errors));
+            }
 
-        var result = await _authService.LoginAsync(request);
-        
-        if (result == null)
-        {
-            return Unauthorized(ApiResponse<object>.ErrorResponse("Invalid credentials"));
-        }
+            var result = await _authService.LoginAsync(request);
 
-        return Ok(ApiResponse<object>.SuccessResponse(result, "Login successful"));
+            if (result == null)
+            {
+                return Unauthorized(ApiResponse<object>.ErrorResponse("Invalid credentials"));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(result, "Login successful"));
+        }
+        catch (AccountLockedException ex)
+        {
+            return StatusCode(403, new
+            {
+                success = false,
+                message = "ACCOUNT_LOCKED",
+                data = new
+                {
+                    message = "Hesabýnýz kilitlenmiþtir. Danýþmanýnýzla iletiþime geçin.",
+                    advisorName = ex.AdvisorName
+                }
+            });
+        }
     }
 }

@@ -19,9 +19,6 @@ public class StudentExam
     [Column("participation_status")]
     public string ParticipationStatus { get; set; } = string.Empty;
 
-    [Column("consistency_note")]
-    public string? ConsistencyNote { get; set; }
-
     // Navigation Properties
     [ForeignKey("StudentNo")]
     public virtual Student Student { get; set; } = null!;

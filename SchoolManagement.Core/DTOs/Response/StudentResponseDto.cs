@@ -9,4 +9,7 @@ public class StudentResponseDto
     public string StudentMail { get; set; } = string.Empty;
     public string? AdvisorId { get; set; }
     public string? AdvisorName { get; set; }
+    public int ActiveBarCount { get; set; }
+    public bool IsLocked { get; set; }
+    public DateTime? LockedAt { get; set; }
 }

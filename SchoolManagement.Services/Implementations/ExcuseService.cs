@@ -9,10 +9,12 @@ namespace SchoolManagement.Services.Implementations;
 public class ExcuseService : IExcuseService
 {
     private readonly IExcuseRepository _excuseRepository;
+    private readonly IConsistencyService _consistencyService;
 
-    public ExcuseService(IExcuseRepository excuseRepository)
+    public ExcuseService(IExcuseRepository excuseRepository, IConsistencyService consistencyService)
     {
         _excuseRepository = excuseRepository;
+        _consistencyService = consistencyService;
     }
 
     public async Task<ExcuseDetailResponseDto?> GetByIdAsync(string excuseId)
@@ -56,7 +58,9 @@ public class ExcuseService : IExcuseService
         };
 
         var created = await _excuseRepository.AddAsync(excuse);
-        
+
+        await _consistencyService.OnExcuseSubmittedAsync(request.StudentNo);
+
         // Detaylı bilgi için tekrar çek
         var detailed = await _excuseRepository.GetByIdWithDetailsAsync(created.ExcuseId);
         return MapToResponseDto(detailed!);
@@ -72,6 +76,11 @@ public class ExcuseService : IExcuseService
         excuse.ResponseDate = DateTime.UtcNow;
 
         await _excuseRepository.UpdateAsync(excuse);
+
+        if (request.Status == "APPROVED")
+            await _consistencyService.OnExcuseApprovedAsync(excuse.StudentNo);
+        else if (request.Status == "REJECTED")
+            await _consistencyService.OnExcuseRejectedAsync(excuse.StudentNo);
 
         var detailed = await _excuseRepository.GetByIdWithDetailsAsync(excuseId);
         return MapToResponseDto(detailed!);

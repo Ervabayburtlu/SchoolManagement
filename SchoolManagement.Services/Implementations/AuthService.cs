@@ -1,12 +1,14 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using SchoolManagement.Core.DTOs.Request;
+using SchoolManagement.Core.DTOs.Response;
+using SchoolManagement.Core.Entities;
+using SchoolManagement.Core.Interfaces.Repositories;
+using SchoolManagement.Services.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using SchoolManagement.Core.DTOs.Request;
-using SchoolManagement.Core.DTOs.Response;
-using SchoolManagement.Core.Interfaces.Repositories;
-using SchoolManagement.Services.Interfaces;
+using SchoolManagement.Core.Common;
 
 namespace SchoolManagement.Services.Implementations;
 
@@ -67,6 +69,12 @@ public class AuthService : IAuthService
 
                 if (!BCrypt.Net.BCrypt.Verify(request.Password, student.Password))
                     return null;
+
+                // ✅ Önce student'ı çek, sonra kilit kontrolü yap
+                if (student.IsLocked)
+                    throw new AccountLockedException(
+                        student.Advisor?.NameSurname ?? null
+                    );
 
                 var studentToken = GenerateJwtToken(student.StudentNo, student.StudentMail, "STUDENT", student.NameSurname);
                 return new LoginResponseDto
