@@ -2,6 +2,7 @@ using SchoolManagement.Core.DTOs.Request;
 using SchoolManagement.Core.DTOs.Response;
 using SchoolManagement.Core.Entities;
 using SchoolManagement.Core.Interfaces.Repositories;
+using SchoolManagement.Infrastructure.Repositories;
 using SchoolManagement.Services.Interfaces;
 
 namespace SchoolManagement.Services.Implementations;
@@ -9,10 +10,12 @@ namespace SchoolManagement.Services.Implementations;
 public class ExamService : IExamService
 {
     private readonly IExamRepository _examRepository;
+    private readonly IStudentExamRepository _studentExamRepository;
 
-    public ExamService(IExamRepository examRepository)
+    public ExamService(IExamRepository examRepository, IStudentExamRepository studentExamRepository)
     {
         _examRepository = examRepository;
+        _studentExamRepository = studentExamRepository;
     }
 
     public async Task<ExamResponseDto?> GetByIdAsync(string examId)
@@ -38,8 +41,22 @@ public class ExamService : IExamService
 
     public async Task<IEnumerable<ExamResponseDto>> GetByStudentAsync(string studentNo)
     {
+        // 1. Öðrencinin sýnavlarýný DB'den çek (Muhtemelen Repository'de Include(e => e.StudentExams) yapýlýyordur)
         var exams = await _examRepository.GetExamsByStudentAsync(studentNo);
-        return exams.Select(MapToResponseDto);
+
+        // 2. Her bir sýnavý DTO'ya dönüþtürürken öðrencinin durumunu da içine ekle
+        return exams.Select(exam =>
+        {
+            var dto = MapToResponseDto(exam);
+
+            // Öðrencinin bu sýnava ait StudentExam (Katýlým) kaydýný bul
+            var studentExam = exam.StudentExams.FirstOrDefault(se => se.StudentNo == studentNo);
+
+            // Eðer kayýt varsa veritabanýndaki durumu DTO'ya yaz, yoksa PENDING (Beklemede) yap
+            dto.Status = studentExam?.ParticipationStatus ?? "PENDING";
+
+            return dto;
+        });
     }
 
     public async Task<IEnumerable<ExamResponseDto>> GetUpcomingExamsAsync()
@@ -89,6 +106,22 @@ public class ExamService : IExamService
             ExamDate = exam.ExamDate,
             ExamDescription = exam.ExamDescription
         };
+    }
+
+    public async Task<bool> UpdateStatusAsync(string examId, string studentNo, string status)
+    {
+        // Repository'de halihazýrda tanýmlý olan özel metodu kullanýyoruz
+        var studentExam = await _studentExamRepository.GetByStudentAndExamAsync(studentNo, examId);
+
+        if (studentExam == null)
+            return false;
+
+        // Öðrencinin o sýnava ait katýlým durumunu güncelliyoruz
+        studentExam.ParticipationStatus = status;
+
+        // Generic repository'den gelen güncelleme metodunu çaðýrýyoruz
+        await _studentExamRepository.UpdateAsync(studentExam);
+        return true;
     }
 }
 

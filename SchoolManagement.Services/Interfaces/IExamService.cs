@@ -13,4 +13,5 @@ public interface IExamService
     Task<ExamResponseDto> CreateAsync(ExamCreateDto request);
     Task<bool> DeleteAsync(string examId);
     Task<bool> ExistsAsync(string examId);
+    Task<bool> UpdateStatusAsync(string examId, string studentNo, string status);
 }

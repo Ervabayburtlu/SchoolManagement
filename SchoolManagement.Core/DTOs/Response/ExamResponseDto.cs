@@ -8,4 +8,6 @@ public class ExamResponseDto
     public string ExamType { get; set; } = string.Empty;
     public DateTime ExamDate { get; set; }
     public string? ExamDescription { get; set; }
+
+    public string Status { get; set; } = "PENDING";
 }

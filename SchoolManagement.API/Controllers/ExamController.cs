@@ -91,5 +91,23 @@ public class ExamController : ControllerBase
 
         return Ok(ApiResponse<object>.SuccessResponse(null, "Exam deleted successfully"));
     }
+
+    [HttpPut("{examId}/status")]
+    public async Task<IActionResult> UpdateStatus(string examId, [FromBody] ExamStatusUpdateDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Status) || string.IsNullOrWhiteSpace(request.StudentNo))
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Status and StudentNo cannot be empty"));
+        }
+
+        var success = await _examService.UpdateStatusAsync(examId, request.StudentNo, request.Status);
+
+        if (!success)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse("Student exam record not found"));
+        }
+
+        return Ok(ApiResponse<object>.SuccessResponse(null, "Participation status updated successfully"));
+    }
 }
 
