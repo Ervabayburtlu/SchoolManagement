@@ -1,6 +1,7 @@
 using SchoolManagement.Core.DTOs.Request;
 using SchoolManagement.Core.DTOs.Response;
 using SchoolManagement.Core.Entities;
+using SchoolManagement.Core.Enums;
 using SchoolManagement.Core.Interfaces.Repositories;
 using SchoolManagement.Infrastructure.Repositories;
 using SchoolManagement.Services.Interfaces;
@@ -41,23 +42,25 @@ public class ExamService : IExamService
 
     public async Task<IEnumerable<ExamResponseDto>> GetByStudentAsync(string studentNo)
     {
-        // 1. Öðrencinin sýnavlarýný DB'den çek (Muhtemelen Repository'de Include(e => e.StudentExams) yapýlýyordur)
         var exams = await _examRepository.GetExamsByStudentAsync(studentNo);
 
-        // 2. Her bir sýnavý DTO'ya dönüþtürürken öðrencinin durumunu da içine ekle
         return exams.Select(exam =>
         {
             var dto = MapToResponseDto(exam);
 
-            // Öðrencinin bu sýnava ait StudentExam (Katýlým) kaydýný bul
             var studentExam = exam.StudentExams.FirstOrDefault(se => se.StudentNo == studentNo);
 
-            // Eðer kayýt varsa veritabanýndaki durumu DTO'ya yaz, yoksa PENDING (Beklemede) yap
-            dto.Status = studentExam?.ParticipationStatus ?? "PENDING";
+            // 1. Katýlým Durumunu (Enum) DTO'ya aktarýyoruz
+            dto.ParticipationStatus = studentExam != null
+                ? studentExam.ParticipationStatus.ToString()
+                : ParticipationStatus.Bekliyor.ToString();
+
+            // 2. Bildirim Durumunu DTO'ya aktarýyoruz
+            dto.ParticipationNotification = studentExam?.ParticipationNotification ?? string.Empty;
 
             return dto;
         });
-    }
+}
 
     public async Task<IEnumerable<ExamResponseDto>> GetUpcomingExamsAsync()
     {
@@ -108,18 +111,36 @@ public class ExamService : IExamService
         };
     }
 
-    public async Task<bool> UpdateStatusAsync(string examId, string studentNo, string status)
+    public async Task<bool> UpdateStatusAsync(string examId, string studentNo, string status, string? notification = null)
     {
-        // Repository'de halihazýrda tanýmlý olan özel metodu kullanýyoruz
         var studentExam = await _studentExamRepository.GetByStudentAndExamAsync(studentNo, examId);
 
         if (studentExam == null)
             return false;
 
-        // Öðrencinin o sýnava ait katýlým durumunu güncelliyoruz
-        studentExam.ParticipationStatus = status;
+        // 1. ÖÐRENCÝNÝN PLANI (Bildirim):
+        // Vue'dan gelen 'status' (APPROVED/REJECTED) deðerini Notification sütununa yazýyoruz.
+        // Eðer Modal'dan ekstra bir mazeret metni geldiyse onu da yanýna ekleyebiliriz.
+        string studentPlan = status;
 
-        // Generic repository'den gelen güncelleme metodunu çaðýrýyoruz
+        if (!string.IsNullOrEmpty(notification) && notification != status)
+        {
+            // Örn: "REJECTED - Hastanede randevum var"
+            studentPlan = $"{status} - {notification}";
+        }
+
+        if (studentPlan.Length > 50)
+        {
+            studentPlan = studentPlan.Substring(0, 50);
+        }
+
+        studentExam.ParticipationNotification = studentPlan;
+
+        // 2. GERÇEKLEÞEN DURUM (Yoklama):
+        // studentExam.ParticipationStatus alanýna DOKUNMUYORUZ! 
+        // O kýsým sýnav tarihi geldiðinde, öðretmen yoklama aldýðýnda güncellenecek.
+
+        // 3. Veritabanýný Güncelle
         await _studentExamRepository.UpdateAsync(studentExam);
         return true;
     }

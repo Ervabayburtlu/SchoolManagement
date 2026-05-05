@@ -100,7 +100,7 @@ public class ExamController : ControllerBase
             return BadRequest(ApiResponse<object>.ErrorResponse("Status and StudentNo cannot be empty"));
         }
 
-        var success = await _examService.UpdateStatusAsync(examId, request.StudentNo, request.Status);
+        var success = await _examService.UpdateStatusAsync(examId, request.StudentNo, request.Status, request.Notification);
 
         if (!success)
         {

@@ -9,5 +9,6 @@ public class ExamResponseDto
     public DateTime ExamDate { get; set; }
     public string? ExamDescription { get; set; }
 
-    public string Status { get; set; } = "PENDING";
+    public string ParticipationStatus { get; set; } = "PENDING";
+    public string ParticipationNotification { get; set; } = string.Empty;
 }

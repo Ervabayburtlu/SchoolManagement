@@ -84,6 +84,9 @@ public class ApplicationDbContext : DbContext
                 .WithMany(e => e.StudentExams)
                 .HasForeignKey(se => se.ExamId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.ParticipationStatus)
+                  .HasConversion<string>();
         });
 
         // StudentSubject Configuration

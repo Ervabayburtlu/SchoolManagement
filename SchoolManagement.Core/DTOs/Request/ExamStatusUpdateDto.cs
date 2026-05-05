@@ -4,4 +4,5 @@ public class ExamStatusUpdateDto
 {
     public string StudentNo { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public string? Notification { get; set; }
 }
