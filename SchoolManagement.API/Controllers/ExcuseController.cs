@@ -1,9 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolManagement.Core.Common;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using SchoolManagement.Core.Common;
 using SchoolManagement.Core.DTOs.Request;
 using SchoolManagement.Services.Interfaces;
 using SchoolManagement.Validation.Validators;
+using System.IO;
 
 namespace SchoolManagement.API.Controllers;
 
@@ -13,10 +19,12 @@ namespace SchoolManagement.API.Controllers;
 public class ExcuseController : ControllerBase
 {
     private readonly IExcuseService _excuseService;
+    private readonly IWebHostEnvironment _environment;
 
-    public ExcuseController(IExcuseService excuseService)
+    public ExcuseController(IExcuseService excuseService, IWebHostEnvironment environment)
     {
         _excuseService = excuseService;
+        _environment = environment;
     }
 
     [HttpGet("{excuseId}")]
@@ -57,19 +65,44 @@ public class ExcuseController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "STUDENT")]
-    public async Task<IActionResult> Create([FromBody] ExcuseCreateDto request)
+    // JSON yerine FormData kabul etmesi için [FromForm] kullanýyoruz
+    public async Task<IActionResult> Create([FromForm] ExcuseCreateDto request)
     {
-        // Validation
+        // Zorunlu belge kontrolü
+        if (request.Document == null || request.Document.Length == 0)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Mazeret belgesi yüklemek zorunludur."));
+        }
+
+        // Validation 
         var validationResult = ExcuseValidator.ValidateCreate(request);
         if (!validationResult.IsValid)
         {
             return BadRequest(ApiResponse<object>.ErrorResponse(
-                "Validation failed", 
+                "Validation failed",
                 validationResult.Errors));
         }
 
+        // Dosyayý sunucuya kaydetme iþlemi
+        var uploadsFolder = Path.Combine(_environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "excuses");
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
+        var uniqueFileName = Guid.NewGuid().ToString() + "_" + request.Document.FileName;
+        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+        using (var fileStream = new FileStream(filePath, FileMode.Create))
+        {
+            await request.Document.CopyToAsync(fileStream);
+        }
+
+        // Kaydedilen dosyanýn yolunu DTO'ya ekle
+        request.DocumentPath = $"/uploads/excuses/{uniqueFileName}";
+
         var excuse = await _excuseService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { excuseId = excuse.ExcuseId }, 
+        return CreatedAtAction(nameof(GetById), new { excuseId = excuse.ExcuseId },
             ApiResponse<object>.SuccessResponse(excuse, "Excuse submitted successfully"));
     }
 

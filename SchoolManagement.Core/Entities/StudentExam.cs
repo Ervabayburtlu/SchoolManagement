@@ -9,7 +9,7 @@ public class StudentExam
 {
     [Key]
     [Column("student_no_exam_id")]
-    public string StudentNoExamId { get; set; } = string.Empty;
+    public int StudentNoExamId { get; set; }
 
     [Column("student_no")]
     public string StudentNo { get; set; } = string.Empty;
