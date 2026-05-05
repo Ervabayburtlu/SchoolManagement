@@ -15,5 +15,7 @@ namespace SchoolManagement.Services.Interfaces
         Task UnlockAccountAsync(string studentNo);
         Task SetBarCountAsync(string studentNo, int count);
         Task<Student?> GetRecordAsync(string studentNo);
+        Task OnAbsentWithoutNotificationAsync(string studentNo);
+        Task OnInconsistentBehaviorAsync(string studentNo);
     }
 }

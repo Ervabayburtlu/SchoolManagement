@@ -89,4 +89,38 @@ public class ConsistencyService : IConsistencyService
     {
         return await _studentRepository.GetByIdAsync(studentNo);
     }
+
+    // Hiç bildirim yok + katılmadı → bar ekle
+    public async Task OnAbsentWithoutNotificationAsync(string studentNo)
+    {
+        var student = await GetStudentAsync(studentNo);
+        if (student.IsLocked) return;
+
+        student.ActiveBarCount++;
+
+        if (student.ActiveBarCount >= 3)
+        {
+            student.IsLocked = true;
+            student.LockedAt = DateTime.UtcNow;
+        }
+
+        await _studentRepository.UpdateAsync(student);
+    }
+
+    // Bildirime ters davranış → bar ekle
+    public async Task OnInconsistentBehaviorAsync(string studentNo)
+    {
+        var student = await GetStudentAsync(studentNo);
+        if (student.IsLocked) return;
+
+        student.ActiveBarCount++;
+
+        if (student.ActiveBarCount >= 3)
+        {
+            student.IsLocked = true;
+            student.LockedAt = DateTime.UtcNow;
+        }
+
+        await _studentRepository.UpdateAsync(student);
+    }
 }
