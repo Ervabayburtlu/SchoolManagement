@@ -6,8 +6,14 @@ public class ExcuseDetailResponseDto
     public string StudentNo { get; set; } = string.Empty;
     public string StudentName { get; set; } = string.Empty;
     public string? ExamId { get; set; }
+
+    public string SubjectName { get; set; } = string.Empty;
+    public string ExamType { get; set; } = string.Empty;
+
     public string ExcuseDescription { get; set; } = string.Empty;
+
     public DateTime RequestDate { get; set; }
+
     public DateTime? ResponseDate { get; set; }
     public string? DocumentPath { get; set; }
     public string Status { get; set; } = string.Empty;

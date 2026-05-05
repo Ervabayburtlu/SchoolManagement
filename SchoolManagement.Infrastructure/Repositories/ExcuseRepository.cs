@@ -16,16 +16,20 @@ public class ExcuseRepository : GenericRepository<Excuse>, IExcuseRepository
         return await _dbSet
             .Include(e => e.Student)
             .Include(e => e.Advisor)
+            .Include(e => e.Exam)
+                .ThenInclude(ex => ex.Subject)
             .FirstOrDefaultAsync(e => e.ExcuseId == excuseId);
     }
 
     public async Task<IEnumerable<Excuse>> GetExcusesByStudentAsync(string studentNo)
     {
         return await _dbSet
-            .Where(e => e.StudentNo == studentNo)
-            .Include(e => e.Advisor)
-            .OrderByDescending(e => e.RequestDate)
-            .ToListAsync();
+        .Where(e => e.StudentNo == studentNo)
+        .Include(e => e.Advisor)
+        .Include(e => e.Exam)
+            .ThenInclude(ex => ex.Subject)
+        .OrderByDescending(e => e.RequestDate)
+        .ToListAsync();
     }
 
     public async Task<IEnumerable<Excuse>> GetExcusesByAdvisorAsync(string advisorId)

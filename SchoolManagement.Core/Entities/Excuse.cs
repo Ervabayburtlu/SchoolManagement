@@ -40,4 +40,7 @@ public class Excuse
 
     [ForeignKey("AdvisorId")]
     public virtual Advisor? Advisor { get; set; }
+
+    [ForeignKey("ExamId")]
+    public virtual Exam Exam { get; set; }
 }

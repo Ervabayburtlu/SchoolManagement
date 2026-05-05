@@ -104,11 +104,15 @@ public class ExcuseService : IExcuseService
             StudentNo = excuse.StudentNo,
             StudentName = excuse.Student?.NameSurname ?? string.Empty,
             ExamId = excuse.ExamId,
-            ExcuseDescription = excuse.ExcuseDescription,
+            // Entity üzerinden ilişkili tablo verilerini çekiyoruz:
+            SubjectName = excuse.Exam?.Subject?.SubjectName ?? "Bilinmiyor",
+            ExamType = excuse.Exam?.ExamType ?? "Bilinmiyor",
             RequestDate = excuse.RequestDate,
+            ExcuseDescription = excuse.ExcuseDescription,
             ResponseDate = excuse.ResponseDate,
             DocumentPath = excuse.DocumentPath,
             Status = excuse.Status
         };
     }
+
 }

@@ -12,11 +12,13 @@ public class ExamService : IExamService
 {
     private readonly IExamRepository _examRepository;
     private readonly IStudentExamRepository _studentExamRepository;
+    private readonly IConsistencyService _consistencyService;
 
-    public ExamService(IExamRepository examRepository, IStudentExamRepository studentExamRepository)
+    public ExamService(IExamRepository examRepository, IStudentExamRepository studentExamRepository, IConsistencyService consistencyService)
     {
         _examRepository = examRepository;
         _studentExamRepository = studentExamRepository;
+        _consistencyService = consistencyService;
     }
 
     public async Task<ExamResponseDto?> GetByIdAsync(string examId)
@@ -60,7 +62,7 @@ public class ExamService : IExamService
 
             return dto;
         });
-}
+    }
 
     public async Task<IEnumerable<ExamResponseDto>> GetUpcomingExamsAsync()
     {
@@ -142,6 +144,19 @@ public class ExamService : IExamService
 
         // 3. Veritabanýný Güncelle
         await _studentExamRepository.UpdateAsync(studentExam);
+
+        bool noNotification = string.IsNullOrEmpty(studentExam.ParticipationNotification);
+        bool absent = studentExam.ParticipationStatus == ParticipationStatus.Katýlmadý;
+        bool inconsistent = !noNotification && absent &&
+                            studentExam.ParticipationNotification.StartsWith("APPROVED");
+        // APPROVED = "katýlacaðým" bildirimi
+
+        if (noNotification && absent)
+            await _consistencyService.OnAbsentWithoutNotificationAsync(studentExam.StudentNo);
+        else if (inconsistent)
+            await _consistencyService.OnInconsistentBehaviorAsync(studentExam.StudentNo);
+
+
         return true;
     }
 }
