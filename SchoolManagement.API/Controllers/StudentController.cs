@@ -72,6 +72,15 @@ public class StudentController : ControllerBase
             ApiResponse<object>.SuccessResponse(student, "Student created successfully"));
     }
 
+    [HttpGet("inactive")]
+    [Authorize(Roles = "ADVISOR,ADMIN")]
+    public async Task<IActionResult> GetInactiveStudents()
+    {
+        // Not: IStudentService içinde GetInactiveAsync diye bir metodun olduğunu 
+        // veya eklediğini varsayıyorum.
+        var students = await _studentService.GetInactiveStudentsAsync();
+        return Ok(ApiResponse<object>.SuccessResponse(students));
+    }
     [HttpPut("{studentNo}")]
     [Authorize(Roles = "ADMIN,ADVISOR,STUDENT")]
     public async Task<IActionResult> Update(string studentNo, [FromBody] StudentUpdateDto request)
@@ -109,4 +118,5 @@ public class StudentController : ControllerBase
 
         return Ok(ApiResponse<object>.SuccessResponse(null, "Student deleted successfully"));
     }
+    
 }

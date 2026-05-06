@@ -1,4 +1,3 @@
-using SchoolManagement.Core.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -18,10 +17,9 @@ public class StudentExam
     public string ExamId { get; set; } = string.Empty;
 
     [Column("participation_status")]
-    public ParticipationStatus ParticipationStatus { get; set; } = ParticipationStatus.Bekliyor;
-
-    [Column("participation_notification")]
-    public string? ParticipationNotification { get; set; } = string.Empty;
+    public string ParticipationStatus { get; set; } = string.Empty;
+     [Column("participation_notification")]
+         public string? ParticipationNotification { get; set; }
 
     // Navigation Properties
     [ForeignKey("StudentNo")]

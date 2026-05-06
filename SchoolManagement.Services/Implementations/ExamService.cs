@@ -52,12 +52,12 @@ public class ExamService : IExamService
 
             var studentExam = exam.StudentExams.FirstOrDefault(se => se.StudentNo == studentNo);
 
-            // 1. Katýlým Durumunu (Enum) DTO'ya aktarýyoruz
+            // 1. Katï¿½lï¿½m Durumunu (Enum) DTO'ya aktarï¿½yoruz
             dto.ParticipationStatus = studentExam != null
                 ? studentExam.ParticipationStatus.ToString()
                 : ParticipationStatus.Bekliyor.ToString();
 
-            // 2. Bildirim Durumunu DTO'ya aktarýyoruz
+            // 2. Bildirim Durumunu DTO'ya aktarï¿½yoruz
             dto.ParticipationNotification = studentExam?.ParticipationNotification ?? string.Empty;
 
             return dto;
@@ -120,14 +120,14 @@ public class ExamService : IExamService
         if (studentExam == null)
             return false;
 
-        // 1. ÖÐRENCÝNÝN PLANI (Bildirim):
-        // Vue'dan gelen 'status' (APPROVED/REJECTED) deðerini Notification sütununa yazýyoruz.
-        // Eðer Modal'dan ekstra bir mazeret metni geldiyse onu da yanýna ekleyebiliriz.
+        // 1. ï¿½ï¿½RENCï¿½Nï¿½N PLANI (Bildirim):
+        // Vue'dan gelen 'status' (APPROVED/REJECTED) deï¿½erini Notification sï¿½tununa yazï¿½yoruz.
+        // Eï¿½er Modal'dan ekstra bir mazeret metni geldiyse onu da yanï¿½na ekleyebiliriz.
         string studentPlan = status;
 
         if (!string.IsNullOrEmpty(notification) && notification != status)
         {
-            // Örn: "REJECTED - Hastanede randevum var"
+            // ï¿½rn: "REJECTED - Hastanede randevum var"
             studentPlan = $"{status} - {notification}";
         }
 
@@ -138,18 +138,18 @@ public class ExamService : IExamService
 
         studentExam.ParticipationNotification = studentPlan;
 
-        // 2. GERÇEKLEÞEN DURUM (Yoklama):
-        // studentExam.ParticipationStatus alanýna DOKUNMUYORUZ! 
-        // O kýsým sýnav tarihi geldiðinde, öðretmen yoklama aldýðýnda güncellenecek.
+        // 2. GERï¿½EKLEï¿½EN DURUM (Yoklama):
+        // studentExam.ParticipationStatus alanï¿½na DOKUNMUYORUZ! 
+        // O kï¿½sï¿½m sï¿½nav tarihi geldiï¿½inde, ï¿½ï¿½retmen yoklama aldï¿½ï¿½ï¿½nda gï¿½ncellenecek.
 
-        // 3. Veritabanýný Güncelle
+        // 3. Veritabanï¿½nï¿½ Gï¿½ncelle
         await _studentExamRepository.UpdateAsync(studentExam);
 
         bool noNotification = string.IsNullOrEmpty(studentExam.ParticipationNotification);
-        bool absent = studentExam.ParticipationStatus == ParticipationStatus.Katýlmadý;
+        bool absent = studentExam.ParticipationStatus == ParticipationStatus.KatÄ±lmadÄ±.ToString();
         bool inconsistent = !noNotification && absent &&
                             studentExam.ParticipationNotification.StartsWith("APPROVED");
-        // APPROVED = "katýlacaðým" bildirimi
+        // APPROVED = "katï¿½lacaï¿½ï¿½m" bildirimi
 
         if (noNotification && absent)
             await _consistencyService.OnAbsentWithoutNotificationAsync(studentExam.StudentNo);

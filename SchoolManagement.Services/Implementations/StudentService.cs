@@ -106,5 +106,20 @@ public class StudentService : IStudentService
             AdvisorName = student.Advisor?.NameSurname
         };
     }
+    public async Task<IEnumerable<StudentResponseDto>> GetInactiveStudentsAsync()
+        {
+            // Repository üzerinden IsLocked veya benzeri bir durumu true olanları çekiyoruz
+            // Not: Repository'de bu metod yoksa önce oraya da eklemen gerekebilir 
+            // veya GetAll üzerinden filtreleyebilirsin (performans için repository önerilir)
+            
+            var inactiveStudents = await _studentRepository.FindAsync(s => s.IsLocked == true);
+            
+            return inactiveStudents.Select(s => new StudentResponseDto {
+                AdvisorId = s.AdvisorId,
+                StudentNo = s.StudentNo,
+                NameSurname = s.NameSurname,
+                IsLocked = s.IsLocked
+                // ... diğer maplemeler
+            });
+        }
 }
-

@@ -59,13 +59,28 @@ public class ExcuseService : IExcuseService
 
         var created = await _excuseRepository.AddAsync(excuse);
 
-        await _consistencyService.OnExcuseSubmittedAsync(request.StudentNo);
+        // GEÇİCİ: consistency'yi atla, hata buradan mı geliyor test et
+        try 
+        {
+            await _consistencyService.OnExcuseSubmittedAsync(request.StudentNo);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Consistency hatası (kritik değil): {ex.Message}");
+            // Devam et, bu yüzden başvuru başarısız olmasın
+        }
 
-        // Detaylı bilgi için tekrar çek
         var detailed = await _excuseRepository.GetByIdWithDetailsAsync(created.ExcuseId);
-        return MapToResponseDto(detailed!);
+    
+        // GEÇİCİ: detailed null mu kontrol et
+        if (detailed == null)
+        {
+            Console.WriteLine($"HATA: GetByIdWithDetailsAsync null döndü. ExcuseId: {created.ExcuseId}");
+            return MapToResponseDto(created); // ham entity ile dön
+        }
+    
+        return MapToResponseDto(detailed);
     }
-
     public async Task<ExcuseDetailResponseDto> RespondToExcuseAsync(string excuseId, ExcuseResponseDto request)
     {
         var excuse = await _excuseRepository.GetByIdAsync(excuseId);

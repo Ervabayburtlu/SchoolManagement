@@ -13,4 +13,6 @@ public interface IStudentService
     Task<StudentResponseDto> UpdateAsync(string studentNo, StudentUpdateDto request);
     Task<bool> DeleteAsync(string studentNo);
     Task<bool> ExistsAsync(string studentNo);
+    Task<IEnumerable<StudentResponseDto>> GetInactiveStudentsAsync();
+    
 }
