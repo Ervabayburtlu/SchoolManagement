@@ -2,6 +2,7 @@ using SchoolManagement.Core.DTOs.Request;
 using SchoolManagement.Core.DTOs.Response;
 using SchoolManagement.Core.Entities;
 using SchoolManagement.Core.Interfaces.Repositories;
+using SchoolManagement.Infrastructure.Repositories;
 using SchoolManagement.Services.Interfaces;
 
 namespace SchoolManagement.Services.Implementations;
@@ -10,11 +11,13 @@ public class ExcuseService : IExcuseService
 {
     private readonly IExcuseRepository _excuseRepository;
     private readonly IConsistencyService _consistencyService;
+    private readonly IStudentRepository _studentRepository;
 
-    public ExcuseService(IExcuseRepository excuseRepository, IConsistencyService consistencyService)
+    public ExcuseService(IExcuseRepository excuseRepository, IConsistencyService consistencyService, IStudentRepository studentRepository)
     {
         _excuseRepository = excuseRepository;
         _consistencyService = consistencyService;
+        _studentRepository = studentRepository;
     }
 
     public async Task<ExcuseDetailResponseDto?> GetByIdAsync(string excuseId)
@@ -46,11 +49,15 @@ public class ExcuseService : IExcuseService
 
     public async Task<ExcuseDetailResponseDto> CreateAsync(ExcuseCreateDto request)
     {
+
+        var student = await _studentRepository.GetByStudentNoWithDetailsAsync(request.StudentNo); // ← bu satır önce
+
         var excuse = new Excuse
         {
             ExcuseId = Guid.NewGuid().ToString(),
             StudentNo = request.StudentNo,
             ExamId = request.ExamId,
+            AdvisorId = student?.AdvisorId,
             ExcuseDescription = request.ExcuseDescription,
             DocumentPath = request.DocumentPath,
             RequestDate = DateTime.UtcNow,

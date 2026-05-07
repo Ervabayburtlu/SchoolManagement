@@ -127,7 +127,7 @@ app.UseCors("VueAppPolicy");  // CORS en başta olmalı
 
 // Global Exception Handler Middleware
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
-
+app.UseStaticFiles();
 
 
 // Configure the HTTP request pipeline

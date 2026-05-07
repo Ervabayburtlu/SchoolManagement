@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SchoolManagement.Core.Entities;
 using SchoolManagement.Core.Interfaces.Repositories;
 using SchoolManagement.Infrastructure.Data;
@@ -37,6 +37,8 @@ public class ExcuseRepository : GenericRepository<Excuse>, IExcuseRepository
         return await _dbSet
             .Where(e => e.AdvisorId == advisorId)
             .Include(e => e.Student)
+            .Include(e => e.Exam)           // ← ekle
+                .ThenInclude(ex => ex.Subject)  // ← ekle
             .OrderByDescending(e => e.RequestDate)
             .ToListAsync();
     }
