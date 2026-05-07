@@ -7,7 +7,7 @@ public enum ExcuseStatus
     REJECTED
 }
 
-public enum ParticipationStatus
+public enum ParticipationStatuses
 {
     PRESENT,
     ABSENT,

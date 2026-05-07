@@ -17,5 +17,6 @@ namespace SchoolManagement.Services.Interfaces
         Task<Student?> GetRecordAsync(string studentNo);
         Task OnAbsentWithoutNotificationAsync(string studentNo);
         Task OnInconsistentBehaviorAsync(string studentNo);
+        Task OnPositiveSurpriseAsync(string studentNo);
     }
 }

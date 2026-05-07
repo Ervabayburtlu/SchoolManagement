@@ -4,6 +4,7 @@ using SchoolManagement.Core.Common;
 using SchoolManagement.Core.DTOs.Request;
 using SchoolManagement.Services.Interfaces;
 using SchoolManagement.Validation.Validators;
+using SchoolManagement.Core.Enums;
 
 namespace SchoolManagement.API.Controllers;
 
@@ -108,6 +109,29 @@ public class ExamController : ControllerBase
         }
 
         return Ok(ApiResponse<object>.SuccessResponse(null, "Participation status updated successfully"));
+    }
+
+    [HttpPut("{examId}/participation")]
+    [Authorize(Roles = "ADMIN,ACADEMICIAN")]
+    public async Task<IActionResult> UpdateParticipation(string examId, [FromBody] ExamParticipationUpdateDto request)
+    {
+        if (!Enum.TryParse<SchoolManagement.Core.Enums.ParticipationStatus>(request.Status, ignoreCase: true, out var status))
+            return BadRequest(ApiResponse<object>.ErrorResponse("Geçersiz katýlým durumu"));
+
+        var success = await _examService.UpdateParticipationAsync(examId, request.StudentNo, status);
+
+        if (!success)
+            return NotFound(ApiResponse<object>.ErrorResponse("Öðrenci sýnav kaydý bulunamadý"));
+
+        return Ok(ApiResponse<object>.SuccessResponse(null, "Katýlým durumu güncellendi"));
+    }
+
+    [HttpGet("{examId}/students")]
+    [Authorize(Roles = "ADMIN,ACADEMICIAN")]
+    public async Task<IActionResult> GetStudentsByExam(string examId)
+    {
+        var students = await _examService.GetStudentsByExamAsync(examId);
+        return Ok(ApiResponse<object>.SuccessResponse(students));
     }
 }
 

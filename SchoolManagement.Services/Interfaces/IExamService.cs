@@ -1,5 +1,6 @@
 using SchoolManagement.Core.DTOs.Request;
 using SchoolManagement.Core.DTOs.Response;
+using SchoolManagement.Core.Enums;
 
 namespace SchoolManagement.Services.Interfaces;
 
@@ -14,4 +15,6 @@ public interface IExamService
     Task<bool> DeleteAsync(string examId);
     Task<bool> ExistsAsync(string examId);
     Task<bool> UpdateStatusAsync(string examId, string studentNo, string status, string? notification = null);
+    Task<IEnumerable<object>> GetStudentsByExamAsync(string examId);
+    Task<bool> UpdateParticipationAsync(string examId, string studentNo, ParticipationStatus status);
 }

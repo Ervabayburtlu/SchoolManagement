@@ -116,48 +116,52 @@ public class ExamService : IExamService
     public async Task<bool> UpdateStatusAsync(string examId, string studentNo, string status, string? notification = null)
     {
         var studentExam = await _studentExamRepository.GetByStudentAndExamAsync(studentNo, examId);
+        if (studentExam == null) return false;
 
-        if (studentExam == null)
-            return false;
-
-        // 1. ��RENC�N�N PLANI (Bildirim):
-        // Vue'dan gelen 'status' (APPROVED/REJECTED) de�erini Notification s�tununa yaz�yoruz.
-        // E�er Modal'dan ekstra bir mazeret metni geldiyse onu da yan�na ekleyebiliriz.
         string studentPlan = status;
 
         if (!string.IsNullOrEmpty(notification) && notification != status)
-        {
-            // �rn: "REJECTED - Hastanede randevum var"
             studentPlan = $"{status} - {notification}";
-        }
 
         if (studentPlan.Length > 50)
-        {
             studentPlan = studentPlan.Substring(0, 50);
-        }
 
         studentExam.ParticipationNotification = studentPlan;
-
-        // 2. GER�EKLE�EN DURUM (Yoklama):
-        // studentExam.ParticipationStatus alan�na DOKUNMUYORUZ! 
-        // O k�s�m s�nav tarihi geldi�inde, ��retmen yoklama ald���nda g�ncellenecek.
-
-        // 3. Veritaban�n� G�ncelle
         await _studentExamRepository.UpdateAsync(studentExam);
 
-        bool noNotification = string.IsNullOrEmpty(studentExam.ParticipationNotification);
-        bool absent = studentExam.ParticipationStatus == ParticipationStatus.Katılmadı.ToString();
-        bool inconsistent = !noNotification && absent &&
-                            studentExam.ParticipationNotification.StartsWith("APPROVED");
-        // APPROVED = "kat�laca��m" bildirimi
+        return true;
+    }
 
-        if (noNotification && absent)
-            await _consistencyService.OnAbsentWithoutNotificationAsync(studentExam.StudentNo);
-        else if (inconsistent)
-            await _consistencyService.OnInconsistentBehaviorAsync(studentExam.StudentNo);
+    public async Task<bool> UpdateParticipationAsync(string examId, string studentNo, ParticipationStatus newStatus)
+    {
+        var studentExam = await _studentExamRepository.GetByStudentAndExamAsync(studentNo, examId);
+        if (studentExam == null) return false;
 
+        var prevStatus = studentExam.ParticipationStatus;
+        var notification = studentExam.ParticipationNotification ?? string.Empty;
+
+        studentExam.ParticipationStatus = newStatus;
+        await _studentExamRepository.UpdateAsync(studentExam);
+
+        if (prevStatus != ParticipationStatus.Bekliyor) return true;
+
+        if (newStatus == ParticipationStatus.Katılmadı)
+            await _consistencyService.OnAbsentWithoutNotificationAsync(studentNo);
+        else if (newStatus == ParticipationStatus.Katıldı && notification.StartsWith("REJECTED"))
+            await _consistencyService.OnPositiveSurpriseAsync(studentNo);
 
         return true;
+    }
+
+    public async Task<IEnumerable<object>> GetStudentsByExamAsync(string examId)
+    {
+        var studentExams = await _studentExamRepository.GetByExamAsync(examId);
+        return studentExams.Select(se => new {
+            studentNo = se.StudentNo,
+            studentName = se.Student?.NameSurname ?? string.Empty,
+            participationStatus = se.ParticipationStatus.ToString(),
+            participationNotification = se.ParticipationNotification
+        });
     }
 }
 

@@ -123,4 +123,20 @@ public class ConsistencyService : IConsistencyService
 
         await _studentRepository.UpdateAsync(student);
     }
+
+    public async Task OnPositiveSurpriseAsync(string studentNo)
+    {
+        var student = await GetStudentAsync(studentNo);
+
+        if (student.ActiveBarCount > 0)
+            student.ActiveBarCount--;
+
+        if (student.IsLocked && student.ActiveBarCount < 3)
+        {
+            student.IsLocked = false;
+            student.UnlockedAt = DateTime.UtcNow;
+        }
+
+        await _studentRepository.UpdateAsync(student);
+    }
 }

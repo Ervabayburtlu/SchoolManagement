@@ -62,7 +62,7 @@ public class ExcuseService : IExcuseService
         // GEÇİCİ: consistency'yi atla, hata buradan mı geliyor test et
         try 
         {
-            await _consistencyService.OnExcuseSubmittedAsync(request.StudentNo);
+            //await _consistencyService.OnExcuseSubmittedAsync(request.StudentNo);
         }
         catch (Exception ex)
         {
