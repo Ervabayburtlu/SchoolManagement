@@ -7,4 +7,5 @@ public interface IAuthService
 {
     Task<LoginResponseDto?> LoginAsync(LoginRequestDto request);
     string GenerateJwtToken(string userId, string email, string role, string name);
+    Task<LoginResponseDto?> ObsLoginAsync(LoginRequestDto request); // Dönüþ tipin (LoginResponseDto) kendi projendekiyle ayný olmalý.
 }

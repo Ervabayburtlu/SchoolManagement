@@ -34,7 +34,7 @@ public class AuthService : IAuthService
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
     {
         var role = request.Role.ToUpper();
-        
+
         // 1. Admin Kontrolü (Kod tarafında/Appsettings'ten)
         if (role == "ADMIN")
         {
@@ -115,11 +115,11 @@ public class AuthService : IAuthService
                     return null;
 
                 var academicianToken = GenerateJwtToken(
-                    academician.AcademicianId, 
-                    academician.AcademicianEmail, 
-                    "ACADEMICIAN", 
+                    academician.AcademicianId,
+                    academician.AcademicianEmail,
+                    "ACADEMICIAN",
                     $"{academician.FirstName} {academician.LastName}");
-                    
+
                 return new LoginResponseDto
                 {
                     Token = academicianToken,
@@ -133,6 +133,41 @@ public class AuthService : IAuthService
             default:
                 return null;
         }
+    }
+
+    // OBS GİRİŞ METODU
+    public async Task<LoginResponseDto?> ObsLoginAsync(LoginRequestDto request)
+    {
+        // OBS girişi istendiğinde direkt Öğrenci (Student) tablosundan kontrol ediyoruz.
+        var student = await _studentRepository.GetByEmailAsync(request.Email);
+
+        if (student == null)
+            return null;
+
+        // Şifre kontrolü
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, student.Password))
+            return null;
+
+        // OBS girişinde de hesabın kilitli olup olmadığına bakmak istersen bu bloğu tutabilirsin.
+        // İstemiyorsan silebilirsin.
+        if (student.IsLocked)
+            throw new AccountLockedException(
+                student.Advisor?.NameSurname ?? null
+            );
+
+        // JWT Token Üretimi (OBS kullanıcısı olduğunu ayırt etmek istersen Role kısmını "OBS_STUDENT" yapabilirsin, 
+        // ancak sistemdeki diğer authorization yapılarını bozmamak için şimdilik "STUDENT" bıraktım)
+        var studentToken = GenerateJwtToken(student.StudentNo, student.StudentMail, "STUDENT", student.NameSurname);
+
+        return new LoginResponseDto
+        {
+            Token = studentToken,
+            UserId = student.StudentNo,
+            Email = student.StudentMail,
+            Role = "STUDENT",
+            Name = student.NameSurname,
+            ExpiresAt = DateTime.UtcNow.AddHours(24)
+        };
     }
 
     public string GenerateJwtToken(string userId, string email, string role, string name)
