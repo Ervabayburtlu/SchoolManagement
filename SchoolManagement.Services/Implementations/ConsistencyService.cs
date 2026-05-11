@@ -1,4 +1,5 @@
-﻿using SchoolManagement.Core.Entities;
+﻿// ConsistencyService.cs
+using SchoolManagement.Core.Entities;
 using SchoolManagement.Core.Interfaces.Repositories;
 using SchoolManagement.Services.Interfaces;
 
@@ -11,24 +12,10 @@ public class ConsistencyService : IConsistencyService
         _studentRepository = studentRepository;
     }
 
-    // Mazeret yüklendi → bar ekle
-    public async Task OnExcuseSubmittedAsync(string studentNo)
-    {
-        var student = await GetStudentAsync(studentNo);
-        if (student.IsLocked) return;
+    // Mazeret yüklendi → bar değişmez, sadece onay/red etkiler
+    public Task OnExcuseSubmittedAsync(string studentNo) => Task.CompletedTask;
 
-        student.ActiveBarCount++;
-
-        if (student.ActiveBarCount >= 3)
-        {
-            student.IsLocked = true;
-            student.LockedAt = DateTime.UtcNow;
-        }
-
-        await _studentRepository.UpdateAsync(student);
-    }
-
-    // Mazeret onaylandı → bar geri al
+    // Mazeret onaylandı → 1 bar sil
     public async Task OnExcuseApprovedAsync(string studentNo)
     {
         var student = await GetStudentAsync(studentNo);
@@ -36,14 +23,18 @@ public class ConsistencyService : IConsistencyService
         if (student.ActiveBarCount > 0)
             student.ActiveBarCount--;
 
+        // Bar 3'ün altına düştüyse kilidi kaldır
+        if (student.IsLocked && student.ActiveBarCount < 3)
+        {
+            student.IsLocked = false;
+            student.UnlockedAt = DateTime.UtcNow;
+        }
+
         await _studentRepository.UpdateAsync(student);
     }
 
-    // Mazeret reddedildi → bar kalır, işlem yok
-    public async Task OnExcuseRejectedAsync(string studentNo)
-    {
-        // bar zaten eklenmişti
-    }
+    // Mazeret reddedildi → bar olduğu gibi kalır
+    public Task OnExcuseRejectedAsync(string studentNo) => Task.CompletedTask;
 
     // Danışman kilidi açar → bar sıfırla
     public async Task UnlockAccountAsync(string studentNo)
@@ -72,6 +63,44 @@ public class ConsistencyService : IConsistencyService
         else if (student.ActiveBarCount < 3 && student.IsLocked)
         {
             student.IsLocked = false;
+            student.UnlockedAt = DateTime.UtcNow;
+        }
+
+        await _studentRepository.UpdateAsync(student);
+    }
+
+    // Bildirim yok (katılsa da katılmasa da) → bar ekle
+    public async Task OnAbsentWithoutNotificationAsync(string studentNo)
+    {
+        var student = await GetStudentAsync(studentNo);
+        if (student.IsLocked) return;
+
+        await IncrementBarAsync(student);
+    }
+
+    // Bildirim gerçekleşmedi: katılacak dedi katılmadı VEYA katılmayacak dedi katıldı → bar ekle
+    public async Task OnInconsistentBehaviorAsync(string studentNo)
+    {
+        var student = await GetStudentAsync(studentNo);
+        if (student.IsLocked) return;
+
+        await IncrementBarAsync(student);
+    }
+
+    public async Task<Student?> GetRecordAsync(string studentNo)
+    {
+        return await _studentRepository.GetByIdAsync(studentNo);
+    }
+
+    // Bar artırma ortak logic
+    private async Task IncrementBarAsync(Student student)
+    {
+        student.ActiveBarCount++;
+
+        if (student.ActiveBarCount >= 3)
+        {
+            student.IsLocked = true;
+            student.LockedAt = DateTime.UtcNow;
         }
 
         await _studentRepository.UpdateAsync(student);
@@ -83,60 +112,5 @@ public class ConsistencyService : IConsistencyService
         if (student == null)
             throw new KeyNotFoundException($"Öğrenci bulunamadı: {studentNo}");
         return student;
-    }
-
-    public async Task<Student?> GetRecordAsync(string studentNo)
-    {
-        return await _studentRepository.GetByIdAsync(studentNo);
-    }
-
-    // Hiç bildirim yok + katılmadı → bar ekle
-    public async Task OnAbsentWithoutNotificationAsync(string studentNo)
-    {
-        var student = await GetStudentAsync(studentNo);
-        if (student.IsLocked) return;
-
-        student.ActiveBarCount++;
-
-        if (student.ActiveBarCount >= 3)
-        {
-            student.IsLocked = true;
-            student.LockedAt = DateTime.UtcNow;
-        }
-
-        await _studentRepository.UpdateAsync(student);
-    }
-
-    // Bildirime ters davranış → bar ekle
-    public async Task OnInconsistentBehaviorAsync(string studentNo)
-    {
-        var student = await GetStudentAsync(studentNo);
-        if (student.IsLocked) return;
-
-        student.ActiveBarCount++;
-
-        if (student.ActiveBarCount >= 3)
-        {
-            student.IsLocked = true;
-            student.LockedAt = DateTime.UtcNow;
-        }
-
-        await _studentRepository.UpdateAsync(student);
-    }
-
-    public async Task OnPositiveSurpriseAsync(string studentNo)
-    {
-        var student = await GetStudentAsync(studentNo);
-
-        if (student.ActiveBarCount > 0)
-            student.ActiveBarCount--;
-
-        if (student.IsLocked && student.ActiveBarCount < 3)
-        {
-            student.IsLocked = false;
-            student.UnlockedAt = DateTime.UtcNow;
-        }
-
-        await _studentRepository.UpdateAsync(student);
     }
 }

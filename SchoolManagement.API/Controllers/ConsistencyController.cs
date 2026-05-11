@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// ConsistencyController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolManagement.Core.Common;
 using SchoolManagement.Services.Interfaces;
@@ -17,7 +18,6 @@ public class ConsistencyController : ControllerBase
         _consistencyService = consistencyService;
     }
 
-    // Öğrencinin bar durumunu getir (danışman veya öğrencinin kendisi görebilir)
     [HttpGet("{studentNo}")]
     public async Task<IActionResult> GetRecord(string studentNo)
     {
@@ -29,11 +29,12 @@ public class ConsistencyController : ControllerBase
         {
             student.ActiveBarCount,
             student.IsLocked,
-            student.LockedAt
+            student.LockedAt,
+            student.UnlockedAt
         }));
     }
 
-    // Hesap kilidini aç (sadece danışman)
+    // Danışman kilidi açar
     [HttpPost("{studentNo}/unlock")]
     [Authorize(Roles = "ADVISOR")]
     public async Task<IActionResult> Unlock(string studentNo)
@@ -49,6 +50,7 @@ public class ConsistencyController : ControllerBase
         }
     }
 
+    // Danışman bar sayısını manuel düzenler
     [HttpPatch("{studentNo}/bars")]
     [Authorize(Roles = "ADVISOR")]
     public async Task<IActionResult> SetBars(string studentNo, [FromBody] int count)
@@ -56,7 +58,39 @@ public class ConsistencyController : ControllerBase
         try
         {
             await _consistencyService.SetBarCountAsync(studentNo, count);
-            return Ok(ApiResponse<object>.SuccessResponse(null, "Bar sayısı güncellendi."));
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"Bar sayısı {count} olarak güncellendi."));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+        }
+    }
+
+    // Elle girilen sınavlar için manuel tetikleme — bildirimsiz devamsızlık
+    [HttpPost("{studentNo}/trigger/no-notification")]
+    [Authorize(Roles = "ADVISOR")]
+    public async Task<IActionResult> TriggerNoNotification(string studentNo)
+    {
+        try
+        {
+            await _consistencyService.OnAbsentWithoutNotificationAsync(studentNo);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Bildirimsiz devamsızlık işlendi."));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+        }
+    }
+
+    // Elle girilen sınavlar için manuel tetikleme — tutarsız davranış
+    [HttpPost("{studentNo}/trigger/inconsistent")]
+    [Authorize(Roles = "ADVISOR")]
+    public async Task<IActionResult> TriggerInconsistent(string studentNo)
+    {
+        try
+        {
+            await _consistencyService.OnInconsistentBehaviorAsync(studentNo);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Tutarsız davranış işlendi."));
         }
         catch (KeyNotFoundException ex)
         {

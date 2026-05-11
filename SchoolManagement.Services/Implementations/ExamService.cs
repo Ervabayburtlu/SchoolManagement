@@ -143,12 +143,25 @@ public class ExamService : IExamService
         studentExam.ParticipationStatus = newStatus;
         await _studentExamRepository.UpdateAsync(studentExam);
 
+        // Yoklama ilk kez alınıyorsa değerlendir
         if (prevStatus != ParticipationStatus.Bekliyor) return true;
 
-        if (newStatus == ParticipationStatus.Katılmadı)
+        if (string.IsNullOrWhiteSpace(notification))
+        {
+            // Kural 3: Hiç bildirim yok
             await _consistencyService.OnAbsentWithoutNotificationAsync(studentNo);
-        else if (newStatus == ParticipationStatus.Katıldı && notification.StartsWith("REJECTED"))
-            await _consistencyService.OnPositiveSurpriseAsync(studentNo);
+        }
+        else if (notification == "APPROVED" && newStatus == ParticipationStatus.Katılmadı)
+        {
+            // Kural 1: Katılacağım dedi, katılmadı
+            await _consistencyService.OnInconsistentBehaviorAsync(studentNo);
+        }
+        else if (notification == "REJECTED" && newStatus == ParticipationStatus.Katıldı)
+        {
+            // Kural 2: Katılmayacağım dedi, katıldı
+            await _consistencyService.OnInconsistentBehaviorAsync(studentNo);
+        }
+        // APPROVED+Katıldı veya REJECTED+Katılmadı → bildirimle uyuşuyor, bar yok
 
         return true;
     }
