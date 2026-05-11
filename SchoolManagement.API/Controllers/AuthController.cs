@@ -20,39 +20,17 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
-        try
-        {
-            // Validation
-            var validationResult = AuthValidator.ValidateLogin(request);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(ApiResponse<object>.ErrorResponse(
-                    "Validation failed",
-                    validationResult.Errors));
-            }
+        var validationResult = AuthValidator.ValidateLogin(request);
+        if (!validationResult.IsValid)
+            return BadRequest(ApiResponse<object>.ErrorResponse("Validation failed", validationResult.Errors));
 
-            var result = await _authService.LoginAsync(request);
+        var result = await _authService.LoginAsync(request);
 
-            if (result == null)
-            {
-                return Unauthorized(ApiResponse<object>.ErrorResponse("Invalid credentials"));
-            }
+        if (result == null)
+            return Unauthorized(ApiResponse<object>.ErrorResponse("Invalid credentials"));
 
-            return Ok(ApiResponse<object>.SuccessResponse(result, "Login successful"));
-        }
-        catch (AccountLockedException ex) // AccountLockedException class'ýnýn tanýmlý olduðunu varsayýyorum
-        {
-            return StatusCode(403, new
-            {
-                success = false,
-                message = "ACCOUNT_LOCKED",
-                data = new
-                {
-                    message = "Hesabýnýz kilitlenmiþtir. Danýþmanýnýzla iletiþime geçin.",
-                    advisorName = ex.AdvisorName
-                }
-            });
-        }
+        return Ok(ApiResponse<object>.SuccessResponse(result, "Login successful"));
+        // AccountLockedException catch bloðu tamamen kaldýrýldý
     }
 
     // OBS GÝRÝÞ ENDPOINT'Ý
@@ -81,9 +59,12 @@ public class AuthController : ControllerBase
 
             return Ok(ApiResponse<object>.SuccessResponse(result, "OBS login successful"));
         }
+        catch (AccountLockedException)
+        {
+            return StatusCode(403, ApiResponse<object>.ErrorResponse("ACCOUNT_LOCKED"));
+        }
         catch (Exception ex)
         {
-            // OBS API'si ile haberleþirken yaþanabilecek sorunlar için genel hata yakalama
             return StatusCode(500, ApiResponse<object>.ErrorResponse("OBS giriþ iþlemi sýrasýnda sunucu hatasý oluþtu."));
         }
     }

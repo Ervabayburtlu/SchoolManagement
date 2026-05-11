@@ -69,12 +69,7 @@ public class AuthService : IAuthService
 
                 if (!BCrypt.Net.BCrypt.Verify(request.Password, student.Password))
                     return null;
-
-                // ✅ Önce student'ı çek, sonra kilit kontrolü yap
-                if (student.IsLocked)
-                    throw new AccountLockedException(
-                        student.Advisor?.NameSurname ?? null
-                    );
+            
 
                 var studentToken = GenerateJwtToken(student.StudentNo, student.StudentMail, "STUDENT", student.NameSurname);
                 return new LoginResponseDto
