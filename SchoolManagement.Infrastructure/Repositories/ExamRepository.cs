@@ -59,5 +59,11 @@ public class ExamRepository : GenericRepository<Exam>, IExamRepository
             .OrderBy(e => e.ExamDate)
             .ToListAsync();
     }
+
+    public async Task<bool> HasConflictAsync(DateTime examDate)
+    {
+        // O tarihte HERHANGÝ BÝR dersin sýnavý varsa true döner.
+        return await _dbSet.AnyAsync(e => e.ExamDate == examDate);
+    }
 }
 

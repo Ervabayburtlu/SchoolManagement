@@ -37,4 +37,10 @@ public class StudentExamRepository : GenericRepository<StudentExam>, IStudentExa
             .Include(se => se.Student)
             .ToListAsync();
     }
+
+    public async Task AddRangeAsync(IEnumerable<StudentExam> studentExams)
+    {
+        await _dbSet.AddRangeAsync(studentExams);
+        await _context.SaveChangesAsync();
+    }
 }

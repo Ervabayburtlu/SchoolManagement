@@ -13,12 +13,14 @@ public class ExamService : IExamService
     private readonly IExamRepository _examRepository;
     private readonly IStudentExamRepository _studentExamRepository;
     private readonly IConsistencyService _consistencyService;
+    private readonly IStudentSubjectRepository _studentSubjectRepository;
 
-    public ExamService(IExamRepository examRepository, IStudentExamRepository studentExamRepository, IConsistencyService consistencyService)
+    public ExamService(IExamRepository examRepository, IStudentExamRepository studentExamRepository, IConsistencyService consistencyService, IStudentSubjectRepository studentSubjectRepository)
     {
         _examRepository = examRepository;
         _studentExamRepository = studentExamRepository;
         _consistencyService = consistencyService;
+        _studentSubjectRepository = studentSubjectRepository;
     }
 
     public async Task<ExamResponseDto?> GetByIdAsync(string examId)
@@ -72,6 +74,14 @@ public class ExamService : IExamService
 
     public async Task<ExamResponseDto> CreateAsync(ExamCreateDto request)
     {
+        // 1. Çakışma kontrolü
+        var hasConflict = await _examRepository.HasConflictAsync(request.ExamDate);
+
+        if (hasConflict)
+            throw new InvalidOperationException(
+                "Aynı tarih ve saatte zaten bir sınav mevcut.");
+
+        // 2. Sınav oluştur
         var exam = new Exam
         {
             ExamId = request.ExamId,
@@ -82,6 +92,21 @@ public class ExamService : IExamService
         };
 
         var created = await _examRepository.AddAsync(exam);
+
+        // 3. Dersi alan öğrencileri otomatik ata
+        var enrollments = await _studentSubjectRepository
+            .GetBySubjectAsync(request.SubjectId);
+
+        var studentExams = enrollments.Select(ss => new StudentExam
+        {
+            ExamId = created.ExamId,
+            StudentNo = ss.StudentNo,
+            ParticipationStatus = ParticipationStatus.Bekliyor,
+            ParticipationNotification = string.Empty
+        });
+
+        await _studentExamRepository.AddRangeAsync(studentExams);
+
         return MapToResponseDto(created);
     }
 

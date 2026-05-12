@@ -7,4 +7,5 @@ public interface IStudentExamRepository : IGenericRepository<StudentExam>
     Task<StudentExam?> GetByStudentAndExamAsync(string studentNo, string examId);
     Task<IEnumerable<StudentExam>> GetByStudentAsync(string studentNo);
     Task<IEnumerable<StudentExam>> GetByExamAsync(string examId);
+    Task AddRangeAsync(IEnumerable<StudentExam> studentExams);
 }
