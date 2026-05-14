@@ -10,16 +10,15 @@ using SchoolManagement.Infrastructure.Data;
 using SchoolManagement.Infrastructure.Repositories;
 using SchoolManagement.Services.Implementations;
 using SchoolManagement.Services.Interfaces;
+using Hangfire;
+using Hangfire.MemoryStorage;
+using SchoolManagement.Core.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
-
-
-
 
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 
 // Swagger configuration with JWT
 builder.Services.AddSwaggerGen(c =>
@@ -31,7 +30,6 @@ builder.Services.AddSwaggerGen(c =>
         Description = "A comprehensive school management system API"
     });
 
-    // JWT Authentication in Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
@@ -88,12 +86,12 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// ⭐ CORS Configuration - Vue Frontend İçin
+// CORS Configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("VueAppPolicy", policy =>
     {
-        policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost") // Bütün localhost portlarına izin verir
+        policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -120,33 +118,49 @@ builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IExcuseService, ExcuseService>();
 builder.Services.AddScoped<IConsistencyService, ConsistencyService>();
 
+// ✅ Email Service
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ExamReminderJob>();
+
+// ✅ Hangfire
+builder.Services.AddHangfire(c => c.UseMemoryStorage());
+builder.Services.AddHangfireServer();
+
 var app = builder.Build();
 
-// ⭐ ÖNEMLI: CORS middleware sırası kritik!
-app.UseCors("VueAppPolicy");  // CORS en başta olmalı
+// ⭐ CORS en başta olmalı
+app.UseCors("VueAppPolicy");
 
-// Global Exception Handler Middleware
+// Global Exception Handler
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseStaticFiles();
 
-
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "School Management API V1");
-        c.RoutePrefix = string.Empty; // Swagger UI at root
+        c.RoutePrefix = string.Empty;
     });
 }
 
-
-//app.UseHttpsRedirection();
+// ✅ Hangfire Dashboard (sadece development'ta açık)
+if (app.Environment.IsDevelopment())
+{
+    app.UseHangfireDashboard("/hangfire");
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ✅ Hangfire Recurring Job — Her gün 08:00'de çalışır
+RecurringJob.AddOrUpdate<ExamReminderJob>(
+    "exam-reminder-job",
+    job => job.SendRemindersAsync(),
+    "0 8 * * *"
+);
 
 app.Run();

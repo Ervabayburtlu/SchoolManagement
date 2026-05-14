@@ -34,12 +34,11 @@ public class ExcuseService : IExcuseService
         var excuses = await _excuseRepository.GetExcusesByStudentAsync(studentNo);
         return excuses.Select(MapToResponseDto);
     }
-
-    public async Task<IEnumerable<ExcuseDetailResponseDto>> GetByAdvisorAsync(string advisorId)
-    {
-        var excuses = await _excuseRepository.GetExcusesByAdvisorAsync(advisorId);
-        return excuses.Select(MapToResponseDto);
-    }
+public async Task<IEnumerable<ExcuseDetailResponseDto>> GetByAdvisorAsync(string advisorId)
+{
+    var excuses = await _excuseRepository.GetExcusesByAdvisorAsync(advisorId);
+    return excuses.Select(MapToResponseDto);
+}
 
     public async Task<IEnumerable<ExcuseDetailResponseDto>> GetPendingExcusesAsync()
     {
@@ -48,8 +47,8 @@ public class ExcuseService : IExcuseService
     }
 
     public async Task<ExcuseDetailResponseDto> CreateAsync(ExcuseCreateDto request)
-    {
-
+    { 
+        
         var student = await _studentRepository.GetByStudentNoWithDetailsAsync(request.StudentNo); // ← bu satır önce
 
         var excuse = new Excuse

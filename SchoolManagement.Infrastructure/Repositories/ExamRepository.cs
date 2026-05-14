@@ -2,14 +2,15 @@ using Microsoft.EntityFrameworkCore;
 using SchoolManagement.Core.Entities;
 using SchoolManagement.Core.Interfaces.Repositories;
 using SchoolManagement.Infrastructure.Data;
+using SchoolManagement.Core.DTOs;
+using System.Linq;
+using SchoolManagement.Core.DTOs.Response;
 
 namespace SchoolManagement.Infrastructure.Repositories;
 
-public class ExamRepository : GenericRepository<Exam>, IExamRepository
+public class ExamRepository(ApplicationDbContext context) : GenericRepository<Exam>(context), IExamRepository
 {
-    public ExamRepository(ApplicationDbContext context) : base(context)
-    {
-    }
+    // --- 1. Mevcut (Eski) MetodlarÄ±n Implementasyonu ---
 
     public async Task<Exam?> GetByIdWithDetailsAsync(string examId)
     {
@@ -62,8 +63,40 @@ public class ExamRepository : GenericRepository<Exam>, IExamRepository
 
     public async Task<bool> HasConflictAsync(DateTime examDate)
     {
-        // O tarihte HERHANGÝ BÝR dersin sýnavý varsa true döner.
         return await _dbSet.AnyAsync(e => e.ExamDate == examDate);
     }
-}
 
+    // --- 2. Yeni Eklenen (E-posta/Job) MetodlarÄ±n Implementasyonu ---
+
+    public async Task<List<ExamReminderDto>> GetStudentsWithoutNotificationAsync(DateTime start, DateTime end)
+    {
+        // _context.Set<StudentExam>() Ã¼zerinden Queryable olarak iÅŸlem yapÄ±yoruz
+        return await _context.Set<StudentExam>()
+            .Include(se => se.Student)
+            .Include(se => se.Exam)
+                .ThenInclude(e => e.Subject)
+            .Where(se => se.Exam.ExamDate >= start && se.Exam.ExamDate <= end 
+                         && !se.ReminderEmailSent)
+            .Select(se => new ExamReminderDto
+            {
+                StudentNoExamId = se.StudentNoExamId, 
+                Email = se.Student.StudentMail, 
+                FullName = se.Student.NameSurname,
+                ExamName = se.Exam.Subject.SubjectName,
+                ExamDate = se.Exam.ExamDate
+            })
+            .ToListAsync();
+    }
+
+    public async Task MarkReminderSentAsync(int studentExamId)
+    {
+        var record = await _context.Set<StudentExam>()
+            .FirstOrDefaultAsync(se => se.StudentNoExamId == studentExamId);
+        
+        if (record != null)
+        {
+            record.ReminderEmailSent = true;
+            await _context.SaveChangesAsync();
+        }
+    }
+}

@@ -11,5 +11,7 @@ public interface IExcuseService
     Task<IEnumerable<ExcuseDetailResponseDto>> GetPendingExcusesAsync();
     Task<ExcuseDetailResponseDto> CreateAsync(ExcuseCreateDto request);
     Task<ExcuseDetailResponseDto> RespondToExcuseAsync(string excuseId, ExcuseResponseDto request);
+ 
     Task<bool> DeleteAsync(string excuseId);
+    
 }

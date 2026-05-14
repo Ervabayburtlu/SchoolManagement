@@ -10,4 +10,5 @@ public interface IExcuseRepository : IGenericRepository<Excuse>
     Task<IEnumerable<Excuse>> GetPendingExcusesAsync();
     Task<IEnumerable<Excuse>> GetExcusesByStatusAsync(string status);
     Task<IEnumerable<Excuse>> GetExcusesByExamAsync(string examId);
+    
 }

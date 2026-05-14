@@ -1,3 +1,4 @@
+// SchoolManagement.Core/Entities/StudentExam.cs
 using SchoolManagement.Core.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -19,9 +20,13 @@ public class StudentExam
 
     [Column("participation_status")]
     public ParticipationStatus ParticipationStatus { get; set; }
-    
+
     [Column("participation_notification")]
     public string? ParticipationNotification { get; set; }
+
+    // ✅ YENİ: Email gönderildi mi?
+    [Column("reminder_email_sent")]
+    public bool ReminderEmailSent { get; set; } = false;
 
     // Navigation Properties
     [ForeignKey("StudentNo")]
