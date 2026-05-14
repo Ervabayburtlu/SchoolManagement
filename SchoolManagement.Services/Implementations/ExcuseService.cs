@@ -34,11 +34,12 @@ public class ExcuseService : IExcuseService
         var excuses = await _excuseRepository.GetExcusesByStudentAsync(studentNo);
         return excuses.Select(MapToResponseDto);
     }
-public async Task<IEnumerable<ExcuseDetailResponseDto>> GetByAdvisorAsync(string advisorId)
-{
-    var excuses = await _excuseRepository.GetExcusesByAdvisorAsync(advisorId);
-    return excuses.Select(MapToResponseDto);
-}
+
+    public async Task<IEnumerable<ExcuseDetailResponseDto>> GetByAdvisorAsync(string advisorId)
+    {
+        var excuses = await _excuseRepository.GetExcusesByAdvisorAsync(advisorId);
+        return excuses.Select(MapToResponseDto);
+    }
 
     public async Task<IEnumerable<ExcuseDetailResponseDto>> GetPendingExcusesAsync()
     {
@@ -87,20 +88,21 @@ public async Task<IEnumerable<ExcuseDetailResponseDto>> GetByAdvisorAsync(string
     
         return MapToResponseDto(detailed);
     }
+
     public async Task<ExcuseDetailResponseDto> RespondToExcuseAsync(string excuseId, ExcuseResponseDto request)
     {
         var excuse = await _excuseRepository.GetByIdAsync(excuseId);
         if (excuse == null)
             throw new KeyNotFoundException($"Excuse with ID {excuseId} not found");
 
-        excuse.Status = request.Status;
+        excuse.Status = request.Status.ToUpperInvariant(); // "Approved" → "APPROVED"
         excuse.ResponseDate = DateTime.UtcNow;
 
         await _excuseRepository.UpdateAsync(excuse);
 
-        if (request.Status == "APPROVED")
+        if (request.Status.Equals("APPROVED", StringComparison.OrdinalIgnoreCase))
             await _consistencyService.OnExcuseApprovedAsync(excuse.StudentNo);
-        else if (request.Status == "REJECTED")
+        else if (request.Status.Equals("REJECTED", StringComparison.OrdinalIgnoreCase))
             await _consistencyService.OnExcuseRejectedAsync(excuse.StudentNo);
 
         var detailed = await _excuseRepository.GetByIdWithDetailsAsync(excuseId);
