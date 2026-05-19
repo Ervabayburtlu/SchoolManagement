@@ -11,15 +11,21 @@ namespace SchoolManagement.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ReCaptchaService _reCaptchaService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, ReCaptchaService reCaptchaService)
     {
         _authService = authService;
+        _reCaptchaService = reCaptchaService;
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
+        var captchaValid = await _reCaptchaService.VerifyAsync(request.CaptchaToken);
+        if (!captchaValid)
+            return BadRequest(ApiResponse<object>.ErrorResponse("Captcha doðrulamasý baþarýsýz."));
+
         var validationResult = AuthValidator.ValidateLogin(request);
         if (!validationResult.IsValid)
             return BadRequest(ApiResponse<object>.ErrorResponse("Validation failed", validationResult.Errors));
@@ -30,17 +36,17 @@ public class AuthController : ControllerBase
             return Unauthorized(ApiResponse<object>.ErrorResponse("Invalid credentials"));
 
         return Ok(ApiResponse<object>.SuccessResponse(result, "Login successful"));
-        // AccountLockedException catch bloðu tamamen kaldýrýldý
     }
 
-    // OBS GÝRÝÞ ENDPOINT'Ý
     [HttpPost("obs-login")]
     public async Task<IActionResult> ObsLogin([FromBody] LoginRequestDto request)
     {
         try
         {
-            // OBS giriþi için de temel validasyonlarý (boþ deðer kontrolü vb.) yapýyoruz.
-            // Eðer OBS için spesifik kurallar varsa AuthValidator içine ValidateObsLogin yazabilirsin.
+            var captchaValid = await _reCaptchaService.VerifyAsync(request.CaptchaToken);
+            if (!captchaValid)
+                return BadRequest(ApiResponse<object>.ErrorResponse("Captcha doðrulamasý baþarýsýz."));
+
             var validationResult = AuthValidator.ValidateLogin(request);
             if (!validationResult.IsValid)
             {
@@ -49,7 +55,6 @@ public class AuthController : ControllerBase
                     validationResult.Errors));
             }
 
-            // Servis katmanýnda OBS'e özel mantýðý iþleyecek metodu çaðýrýyoruz
             var result = await _authService.ObsLoginAsync(request);
 
             if (result == null)

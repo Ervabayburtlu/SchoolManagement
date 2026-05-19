@@ -117,6 +117,7 @@ builder.Services.AddScoped<ISubjectService, SubjectService>();
 builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IExcuseService, ExcuseService>();
 builder.Services.AddScoped<IConsistencyService, ConsistencyService>();
+builder.Services.AddHttpClient<ReCaptchaService>();
 
 // ✅ Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
