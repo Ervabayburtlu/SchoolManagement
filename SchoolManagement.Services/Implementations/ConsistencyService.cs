@@ -36,13 +36,13 @@ public class ConsistencyService : IConsistencyService
     // Mazeret reddedildi → bar olduğu gibi kalır
     public Task OnExcuseRejectedAsync(string studentNo) => Task.CompletedTask;
 
-    // Danışman kilidi açar → bar sıfırla
+    // Danışman kilidi açar → bar bir eksiltilir
     public async Task UnlockAccountAsync(string studentNo)
     {
         var student = await GetStudentAsync(studentNo);
 
         student.IsLocked = false;
-        student.ActiveBarCount = 0;
+        student.ActiveBarCount = Math.Max(0, student.ActiveBarCount - 1);  // ← 1 azalt, 0'ın altına düşme
         student.UnlockedAt = DateTime.UtcNow;
 
         await _studentRepository.UpdateAsync(student);
