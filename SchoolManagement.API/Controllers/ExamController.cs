@@ -5,6 +5,8 @@ using SchoolManagement.Core.DTOs.Request;
 using SchoolManagement.Services.Interfaces;
 using SchoolManagement.Validation.Validators;
 using SchoolManagement.Core.Enums;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace SchoolManagement.API.Controllers;
 
@@ -20,6 +22,13 @@ public class ExamController : ControllerBase
         _examService = examService;
     }
 
+    // JWT "sub" claim'inden giriþ yapan kullanýcýnýn ID'sini al
+    private string? CurrentUserId => User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                       ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                                       ?? User.FindFirst("sub")?.Value;
+
+    private bool IsAdmin => User.IsInRole("ADMIN");
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -31,7 +40,7 @@ public class ExamController : ControllerBase
     public async Task<IActionResult> GetById(string examId)
     {
         var exam = await _examService.GetByIdAsync(examId);
-        
+
         if (exam == null)
         {
             return NotFound(ApiResponse<object>.ErrorResponse($"Exam {examId} not found"));
@@ -50,6 +59,12 @@ public class ExamController : ControllerBase
     [HttpGet("student/{studentNo}")]
     public async Task<IActionResult> GetByStudent(string studentNo)
     {
+        // Öðrenci sadece kendi sýnav listesini görebilir; ADMIN/ACADEMICIAN/ADVISOR herkesi görebilir
+        if (User.IsInRole("STUDENT") && CurrentUserId != studentNo)
+        {
+            return Forbid();
+        }
+
         var exams = await _examService.GetByStudentAsync(studentNo);
         return Ok(ApiResponse<object>.SuccessResponse(exams));
     }
@@ -70,12 +85,22 @@ public class ExamController : ControllerBase
         if (!validationResult.IsValid)
         {
             return BadRequest(ApiResponse<object>.ErrorResponse(
-                "Validation failed", 
+                "Validation failed",
                 validationResult.Errors));
         }
 
+        // Akademisyen sadece kendi dersi için sýnav oluþturabilir
+        if (User.IsInRole("ACADEMICIAN"))
+        {
+            var subject = await _examService.GetSubjectForOwnershipCheckAsync(request.SubjectId);
+            if (subject == null || subject.AcademicianId != CurrentUserId)
+            {
+                return Forbid();
+            }
+        }
+
         var exam = await _examService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { examId = exam.ExamId }, 
+        return CreatedAtAction(nameof(GetById), new { examId = exam.ExamId },
             ApiResponse<object>.SuccessResponse(exam, "Exam created successfully"));
     }
 
@@ -83,8 +108,14 @@ public class ExamController : ControllerBase
     [Authorize(Roles = "ADMIN,ACADEMICIAN")]
     public async Task<IActionResult> Delete(string examId)
     {
+        if (User.IsInRole("ACADEMICIAN"))
+        {
+            var owns = await _examService.AcademicianOwnsExamAsync(examId, CurrentUserId!);
+            if (!owns) return Forbid();
+        }
+
         var deleted = await _examService.DeleteAsync(examId);
-        
+
         if (!deleted)
         {
             return NotFound(ApiResponse<object>.ErrorResponse($"Exam {examId} not found"));
@@ -93,12 +124,19 @@ public class ExamController : ControllerBase
         return Ok(ApiResponse<object>.SuccessResponse(null, "Exam deleted successfully"));
     }
 
+    // Öðrencinin kendi katýlým bildirimini güncellediði endpoint
     [HttpPut("{examId}/status")]
     public async Task<IActionResult> UpdateStatus(string examId, [FromBody] ExamStatusUpdateDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Status) || string.IsNullOrWhiteSpace(request.StudentNo))
         {
             return BadRequest(ApiResponse<object>.ErrorResponse("Status and StudentNo cannot be empty"));
+        }
+
+        // Sadece kendi bildirimini güncelleyebilir (STUDENT) veya ADMIN herkes için yapabilir
+        if (!IsAdmin && request.StudentNo != CurrentUserId)
+        {
+            return Forbid();
         }
 
         var success = await _examService.UpdateStatusAsync(examId, request.StudentNo, request.Status, request.Notification);
@@ -118,6 +156,13 @@ public class ExamController : ControllerBase
         if (!Enum.TryParse<SchoolManagement.Core.Enums.ParticipationStatus>(request.Status, ignoreCase: true, out var status))
             return BadRequest(ApiResponse<object>.ErrorResponse("Geçersiz katýlým durumu"));
 
+        // Akademisyen sadece kendi dersinin sýnavý için iþlem yapabilir
+        if (User.IsInRole("ACADEMICIAN"))
+        {
+            var owns = await _examService.AcademicianOwnsExamAsync(examId, CurrentUserId!);
+            if (!owns) return Forbid();
+        }
+
         var success = await _examService.UpdateParticipationAsync(examId, request.StudentNo, status);
 
         if (!success)
@@ -130,8 +175,13 @@ public class ExamController : ControllerBase
     [Authorize(Roles = "ADMIN,ACADEMICIAN")]
     public async Task<IActionResult> GetStudentsByExam(string examId)
     {
+        if (User.IsInRole("ACADEMICIAN"))
+        {
+            var owns = await _examService.AcademicianOwnsExamAsync(examId, CurrentUserId!);
+            if (!owns) return Forbid();
+        }
+
         var students = await _examService.GetStudentsByExamAsync(examId);
         return Ok(ApiResponse<object>.SuccessResponse(students));
     }
 }
-

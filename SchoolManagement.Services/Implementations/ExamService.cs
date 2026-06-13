@@ -14,13 +14,20 @@ public class ExamService : IExamService
     private readonly IStudentExamRepository _studentExamRepository;
     private readonly IConsistencyService _consistencyService;
     private readonly IStudentSubjectRepository _studentSubjectRepository;
+    private readonly ISubjectRepository _subjectRepository;
 
-    public ExamService(IExamRepository examRepository, IStudentExamRepository studentExamRepository, IConsistencyService consistencyService, IStudentSubjectRepository studentSubjectRepository)
+    public ExamService(
+        IExamRepository examRepository,
+        IStudentExamRepository studentExamRepository,
+        IConsistencyService consistencyService,
+        IStudentSubjectRepository studentSubjectRepository,
+        ISubjectRepository subjectRepository)
     {
         _examRepository = examRepository;
         _studentExamRepository = studentExamRepository;
         _consistencyService = consistencyService;
         _studentSubjectRepository = studentSubjectRepository;
+        _subjectRepository = subjectRepository;
     }
 
     public async Task<ExamResponseDto?> GetByIdAsync(string examId)
@@ -54,12 +61,12 @@ public class ExamService : IExamService
 
             var studentExam = exam.StudentExams.FirstOrDefault(se => se.StudentNo == studentNo);
 
-            // 1. Kat�l�m Durumunu (Enum) DTO'ya aktar�yoruz
+            // 1. Katılım Durumunu (Enum) DTO'ya aktarıyoruz
             dto.ParticipationStatus = studentExam != null
                 ? studentExam.ParticipationStatus.ToString()
                 : ParticipationStatus.Bekliyor.ToString();
 
-            // 2. Bildirim Durumunu DTO'ya aktar�yoruz
+            // 2. Bildirim Durumunu DTO'ya aktarıyoruz
             dto.ParticipationNotification = studentExam?.ParticipationNotification ?? string.Empty;
 
             return dto;
@@ -201,5 +208,21 @@ public class ExamService : IExamService
             participationNotification = se.ParticipationNotification
         });
     }
-}
 
+    // ---- IDOR / Ownership kontrolleri ----
+
+    // Bir sınavın, verilen akademisyenin dersine ait olup olmadığını kontrol eder
+    public async Task<bool> AcademicianOwnsExamAsync(string examId, string academicianId)
+    {
+        var exam = await _examRepository.GetByIdWithDetailsAsync(examId);
+        if (exam == null) return false;
+
+        return exam.Subject?.AcademicianId == academicianId;
+    }
+
+    // Sınav oluştururken dersin sahibini kontrol etmek için
+    public async Task<Subject?> GetSubjectForOwnershipCheckAsync(string subjectId)
+    {
+        return await _subjectRepository.GetByIdWithDetailsAsync(subjectId);
+    }
+}
