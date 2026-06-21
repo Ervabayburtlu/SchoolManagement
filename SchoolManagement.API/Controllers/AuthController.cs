@@ -33,7 +33,7 @@ public class AuthController : ControllerBase
         var result = await _authService.LoginAsync(request);
 
         if (result == null)
-            return Unauthorized(ApiResponse<object>.ErrorResponse("Invalid credentials"));
+            return Unauthorized(ApiResponse<object>.ErrorResponse("E-posta veya parola hatalý."));
 
         return Ok(ApiResponse<object>.SuccessResponse(result, "Login successful"));
     }
@@ -58,9 +58,7 @@ public class AuthController : ControllerBase
             var result = await _authService.ObsLoginAsync(request);
 
             if (result == null)
-            {
-                return Unauthorized(ApiResponse<object>.ErrorResponse("OBS giriþ bilgileri hatalý"));
-            }
+                return Unauthorized(ApiResponse<object>.ErrorResponse("E-posta veya parola hatalý."));
 
             return Ok(ApiResponse<object>.SuccessResponse(result, "OBS login successful"));
         }
