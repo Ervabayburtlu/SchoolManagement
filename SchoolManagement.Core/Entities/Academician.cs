@@ -25,6 +25,13 @@ public class Academician
     [Column("password")]
     public string Password { get; set; } = string.Empty;
 
+    // Refresh Token
+    [Column("refresh_token")]
+    public string? RefreshToken { get; set; }
+
+    [Column("refresh_token_expiry")]
+    public DateTime? RefreshTokenExpiry { get; set; }
+
     // Navigation Properties
     public virtual ICollection<Subject> Subjects { get; set; } = new List<Subject>();
 }

@@ -19,6 +19,13 @@ public class Advisor
     [Column("password")]
     public string Password { get; set; } = string.Empty;
 
+    // Refresh Token
+    [Column("refresh_token")]
+    public string? RefreshToken { get; set; }
+
+    [Column("refresh_token_expiry")]
+    public DateTime? RefreshTokenExpiry { get; set; }
+
     // Navigation Properties
     public virtual ICollection<Student> Students { get; set; } = new List<Student>();
 }

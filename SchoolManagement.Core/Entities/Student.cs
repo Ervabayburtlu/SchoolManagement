@@ -35,7 +35,7 @@ public class Student
     [Column("active_bar_count")]
     public int ActiveBarCount { get; set; } = 0;
 
-    [Column("is_locked")]               
+    [Column("is_locked")]
     public bool IsLocked { get; set; } = false;
 
     [Column("locked_at")]
@@ -43,6 +43,13 @@ public class Student
 
     [Column("unlocked_at")]
     public DateTime? UnlockedAt { get; set; }
+
+    // Refresh Token
+    [Column("refresh_token")]
+    public string? RefreshToken { get; set; }
+
+    [Column("refresh_token_expiry")]
+    public DateTime? RefreshTokenExpiry { get; set; }
 
     public virtual ICollection<StudentExam> StudentExams { get; set; } = new List<StudentExam>();
     public virtual ICollection<StudentSubject> StudentSubjects { get; set; } = new List<StudentSubject>();
