@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Authorization;
+ï»¿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SchoolManagement.Core.Common;
 using SchoolManagement.Core.DTOs.Request;
 using SchoolManagement.Services.Interfaces;
@@ -29,11 +30,12 @@ public class AuthController : ControllerBase
     private string? CurrentUserRole => User.FindFirst(ClaimTypes.Role)?.Value;
 
     [HttpPost("login")]
+    [EnableRateLimiting("LoginPolicy")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
         var captchaValid = await _reCaptchaService.VerifyAsync(request.CaptchaToken);
         if (!captchaValid)
-            return BadRequest(ApiResponse<object>.ErrorResponse("Captcha doðrulamasý baþarýsýz."));
+            return BadRequest(ApiResponse<object>.ErrorResponse("Captcha doÄŸrulamasÄ± baÅŸarÄ±sÄ±z."));
 
         var validationResult = AuthValidator.ValidateLogin(request);
         if (!validationResult.IsValid)
@@ -42,19 +44,20 @@ public class AuthController : ControllerBase
         var result = await _authService.LoginAsync(request);
 
         if (result == null)
-            return Unauthorized(ApiResponse<object>.ErrorResponse("E-posta veya parola hatalý."));
+            return Unauthorized(ApiResponse<object>.ErrorResponse("E-posta veya parola hatalÄ±."));
 
         return Ok(ApiResponse<object>.SuccessResponse(result, "Login successful"));
     }
 
     [HttpPost("obs-login")]
+    [EnableRateLimiting("LoginPolicy")]
     public async Task<IActionResult> ObsLogin([FromBody] LoginRequestDto request)
     {
         try
         {
             var captchaValid = await _reCaptchaService.VerifyAsync(request.CaptchaToken);
             if (!captchaValid)
-                return BadRequest(ApiResponse<object>.ErrorResponse("Captcha doðrulamasý baþarýsýz."));
+                return BadRequest(ApiResponse<object>.ErrorResponse("Captcha doÄŸrulamasÄ± baÅŸarÄ±sÄ±z."));
 
             var validationResult = AuthValidator.ValidateLogin(request);
             if (!validationResult.IsValid)
@@ -67,7 +70,7 @@ public class AuthController : ControllerBase
             var result = await _authService.ObsLoginAsync(request);
 
             if (result == null)
-                return Unauthorized(ApiResponse<object>.ErrorResponse("E-posta veya parola hatalý."));
+                return Unauthorized(ApiResponse<object>.ErrorResponse("E-posta veya parola hatalï¿½."));
 
             return Ok(ApiResponse<object>.SuccessResponse(result, "OBS login successful"));
         }
@@ -77,11 +80,11 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("OBS giriþ iþlemi sýrasýnda sunucu hatasý oluþtu."));
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("OBS giriÅŸ iÅŸlemi sÄ±rasÄ±nda sunucu hatasÄ± oluÅŸtu."));
         }
     }
 
-    // Access token süresi dolduðunda yeni token almak için
+    // Access token sï¿½resi dolduï¿½unda yeni token almak iï¿½in
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto request)
     {
@@ -89,24 +92,24 @@ public class AuthController : ControllerBase
             || string.IsNullOrWhiteSpace(request.Role)
             || string.IsNullOrWhiteSpace(request.RefreshToken))
         {
-            return BadRequest(ApiResponse<object>.ErrorResponse("UserId, Role ve RefreshToken alanlarý zorunludur."));
+            return BadRequest(ApiResponse<object>.ErrorResponse("UserId, Role ve RefreshToken alanlarÄ± zorunludur."));
         }
 
         var result = await _authService.RefreshTokenAsync(request);
 
         if (result == null)
-            return Unauthorized(ApiResponse<object>.ErrorResponse("Geçersiz veya süresi dolmuþ refresh token."));
+            return Unauthorized(ApiResponse<object>.ErrorResponse("GeÃ§ersiz veya sÃ¼resi dolmuÅŸ refresh token."));
 
         return Ok(ApiResponse<object>.SuccessResponse(result, "Token refreshed successfully"));
     }
 
-    // Refresh token'ý geçersizleþtirir (logout)
+    // Refresh token'ï¿½ geï¿½ersizleï¿½tirir (logout)
     [HttpPost("logout")]
     [Authorize]
     public async Task<IActionResult> Logout()
     {
         if (string.IsNullOrEmpty(CurrentUserId) || string.IsNullOrEmpty(CurrentUserRole))
-            return Unauthorized(ApiResponse<object>.ErrorResponse("Geçersiz oturum."));
+            return Unauthorized(ApiResponse<object>.ErrorResponse("GeÃ§ersiz oturum."));
 
         await _authService.LogoutAsync(CurrentUserId, CurrentUserRole);
 

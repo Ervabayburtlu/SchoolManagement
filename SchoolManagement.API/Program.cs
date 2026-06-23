@@ -1,9 +1,11 @@
 // SchoolManagement.API/Program.cs
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models; 
+using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Threading.RateLimiting;
 using SchoolManagement.API.Middleware;
 using SchoolManagement.Core.Interfaces.Repositories;
 using SchoolManagement.Infrastructure.Data;
@@ -23,9 +25,9 @@ builder.Services.AddEndpointsApiExplorer();
 // Swagger configuration with JWT
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "School Management API", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "School Management API",
         Version = "v1",
         Description = "A comprehensive school management system API"
     });
@@ -119,6 +121,37 @@ builder.Services.AddScoped<IExcuseService, ExcuseService>();
 builder.Services.AddScoped<IConsistencyService, ConsistencyService>();
 builder.Services.AddHttpClient<ReCaptchaService>();
 
+// Rate Limiting — Login endpoint'i için IP bazlı brute-force koruması
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("LoginPolicy", context =>
+    {
+        // ::1 ve 127.0.0.1 aynı key'e map'le
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (ip == "::1") ip = "127.0.0.1";
+
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        });
+    });
+
+    // Limit aşılınca 429 Too Many Requests + hata mesajı döner
+    options.RejectionStatusCode = 429;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = 429;
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            """{"success":false,"message":"Çok fazla giriş denemesi yaptınız. Lütfen 1 dakika bekleyiniz.","data":null,"errors":[]}""",
+            cancellationToken
+        );
+    };
+});
+
 // ✅ Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ExamReminderJob>();
@@ -131,6 +164,9 @@ var app = builder.Build();
 
 // ⭐ CORS en başta olmalı
 app.UseCors("VueAppPolicy");
+
+// Rate Limiting
+app.UseRateLimiter();
 
 // Global Exception Handler
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
