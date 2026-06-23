@@ -36,4 +36,9 @@ public class StudentSubjectRepository : GenericRepository<StudentSubject>, IStud
             .Include(ss => ss.Student)
             .ToListAsync();
     }
+
+    public async Task<int> GetRegisteredStudentCountAsync(string subjectId)
+    {
+        return await _dbSet.CountAsync(ss => ss.SubjectId == subjectId);
+    }
 }

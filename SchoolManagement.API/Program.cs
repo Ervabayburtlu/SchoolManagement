@@ -120,6 +120,7 @@ builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IExcuseService, ExcuseService>();
 builder.Services.AddScoped<IConsistencyService, ConsistencyService>();
 builder.Services.AddHttpClient<ReCaptchaService>();
+builder.Services.AddHttpClient<IPredictionService, PredictionService>();
 
 // Rate Limiting — Login endpoint'i için IP bazlı brute-force koruması
 builder.Services.AddRateLimiter(options =>
